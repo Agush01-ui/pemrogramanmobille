@@ -1,20 +1,13 @@
-// home_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'dart:async'; // Digunakan untuk Timer animasi
-import 'todo_model.dart'; // Wajib ada file ini!
+import 'dart:async';
+import 'todo_model.dart';
 
-// --- COLOR PALETTE (Inspirasi dari UI Referensi Ungu/Oranye) ---
 const Color primaryColor = Color(0xFF9F7AEA);
 const Color accentColorOrange = Color(0xFFFF9800);
 const Color accentColorPink = Color(0xFFF48FB1);
-const Color backgroundColor = Color(
-  0xFFF7F2FF,
-); // Warna latar belakang sangat lembut
-const Color bannerColor = Color(
-  0xFF3B417A,
-); // Warna biru tua dari gambar Classroom Hub
+const Color backgroundColor = Color(0xFFF7F2FF);
+const Color bannerColor = Color(0xFF3B417A);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +17,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Animasi Banner State
   Color _animatedColor = accentColorOrange;
   double _animatedSize = 50.0;
   Timer? _timer;
@@ -32,7 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Mulai timer untuk animasi latar belakang
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) {
         setState(() {
@@ -51,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // Data disimpan sementara di memori (sesuai permintaan soal)
+  // Data disimpan sementara di memori
   // KETENTUAN SOAL: Data perlu disimpan sementara dalam memori.
   List<Todo> todos = [
     Todo(
@@ -184,7 +175,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      // Nama Tugas
                       // KETENTUAN SOAL: menggunakan Text
                       TextFormField(
                         initialValue: title,
@@ -221,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 15),
 
-                      // Deadline (Date Picker)
+                      // Deadline
                       // KETENTUAN SOAL: menggunakan Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -242,8 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   return Theme(
                                     data: Theme.of(context).copyWith(
                                       colorScheme: ColorScheme.light(
-                                        primary:
-                                            primaryColor, // Header date picker
+                                        primary: primaryColor,
                                         onPrimary: Colors.white,
                                         onSurface: Colors.black,
                                       ),
@@ -303,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           todos.add(
                             Todo(
                               id: DateTime.now().millisecondsSinceEpoch
-                                  .toString(), // ID unik
+                                  .toString(),
                               title: title,
                               category: category,
                               deadline: deadline,
@@ -362,17 +351,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Widget untuk Item Tugas
   Widget _buildTodoItem(Todo todo) {
-    // Penentuan Warna berdasarkan Kategori (Menggunakan palet baru)
     Color categoryColor;
     switch (todo.category) {
       case 'Pekerjaan':
-        categoryColor = accentColorPink; // Pink
+        categoryColor = accentColorPink;
         break;
       case 'Pribadi':
-        categoryColor = primaryColor.withOpacity(0.8); // Ungu
+        categoryColor = primaryColor.withOpacity(0.8);
         break;
       case 'Belanja':
-        categoryColor = accentColorOrange; // Oranye
+        categoryColor = accentColorOrange;
         break;
       default:
         categoryColor = Colors.green.shade400;
@@ -382,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Implementasi HAPUS melalui Dismissible (Swipe)
     return Dismissible(
       key: ValueKey(todo.id),
-      direction: DismissDirection.endToStart, // Swipe dari kanan ke kiri
+      direction: DismissDirection.endToStart,
       background: Container(
         color: Colors.red,
         alignment: Alignment.centerRight,
@@ -403,11 +391,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               actions: <Widget>[
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(false), // Batal
+                  onPressed: () => Navigator.of(context).pop(false),
                   child: const Text("Batal"),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(true), // Hapus
+                  onPressed: () => Navigator.of(context).pop(true),
                   child: const Text("Hapus"),
                 ),
               ],
@@ -427,7 +415,7 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.symmetric(vertical: 8),
         elevation: 1,
         child: ListTile(
-          onTap: () => _showAddEditDialog(todo), // Edit saat diklik
+          onTap: () => _showAddEditDialog(todo),
           leading: Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
@@ -462,7 +450,6 @@ class _HomeScreenState extends State<HomeScreen> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. Tombol Hapus Eksplisit
               // KETENTUAN SOAL: menggunakan IconButton
               IconButton(
                 // KETENTUAN SOAL: menggunakan Ikon (Icons.delete)
@@ -497,14 +484,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                 },
               ),
-              // 2. Tombol Selesai/Checklist
               // KETENTUAN SOAL: menggunakan IconButton
               IconButton(
                 icon: Icon(
                   todo.isCompleted ? Icons.check_circle : Icons.circle_outlined,
-                  color: todo.isCompleted
-                      ? primaryColor
-                      : Colors.grey, // Warna Ungu
+                  color: todo.isCompleted ? primaryColor : Colors.grey,
                 ),
                 onPressed: () => toggleTodoStatus(todo.id),
               ),
@@ -515,14 +499,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Widget khusus untuk Banner "Classroom Hub"
+  // Widget khusus untuk Banner
   Widget _buildBanner() {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
       padding: const EdgeInsets.all(20),
       height: 150,
       decoration: BoxDecoration(
-        color: bannerColor, // Warna Biru Tua
+        color: bannerColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -532,17 +516,15 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
-                // Teks disesuaikan
                 Text(
                   'PRIORITY HUB',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
-                    color: accentColorOrange, // Warna Kuning/Oranye
+                    color: accentColorOrange,
                   ),
                 ),
                 SizedBox(height: 5),
-                // Teks disesuaikan
                 Text(
                   'Atur tugas Anda, raih produktivitas tertinggi.',
                   style: TextStyle(fontSize: 14, color: Colors.white),
@@ -573,7 +555,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- TAMPILAN UTAMA (BUILD METHOD) ---
+  // --- TAMPILAN UTAMA  ---
 
   @override
   Widget build(BuildContext context) {
@@ -583,12 +565,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // KETENTUAN SOAL: Design Antarmuka (Scaffold, AppBar)
     return Scaffold(
-      // Background yang menarik (Menggunakan warna Ungu lembut)
       extendBodyBehindAppBar: true,
       body: Container(
-        decoration: const BoxDecoration(
-          color: backgroundColor, // Warna latar belakang sangat lembut
-        ),
+        decoration: const BoxDecoration(color: backgroundColor),
         child: CustomScrollView(
           slivers: [
             // KETENTUAN SOAL: menggunakan AppBar
@@ -597,8 +576,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text(
                 '',
               ), // Mengganti dengan Text kosong agar AppBar tetap ada
-              backgroundColor:
-                  Colors.transparent, // Transparan agar background terlihat
+              backgroundColor: Colors.transparent,
               elevation: 0,
               pinned: true,
               actions: [
@@ -614,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             SliverList(
               delegate: SliverChildListDelegate([
-                _buildBanner(), // Menambahkan banner di posisi paling atas
+                _buildBanner(),
 
                 Padding(
                   // KETENTUAN SOAL: menggunakan Padding
