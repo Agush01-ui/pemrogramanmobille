@@ -82,7 +82,7 @@ Jika semua *to-do list* sudah selesai, aplikasi menampilkan pesan motivasi:
 
 ### 🗑️ Menghapus To-Do
 Pengguna dapat menghapus tugas yang sudah tidak diperlukan dengan mudah.
-
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/3e900afde52368c71a7d78e6231d620d7778658e/ff87cd43015b4e4bbaa3caeeb65c7454.jpg)
 
 ---
 
