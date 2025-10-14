@@ -49,7 +49,38 @@ Meningkatkan efektivitas pengelolaan waktu dan membantu pengguna agar lebih kons
 ---
 
 📸 Cuplikan Tampilan 
+## 📸 Cuplikan Tampilan
+
+Berikut beberapa tampilan dari aplikasi **Priority Hub** 👇  
+
+### 🏠 Tampilan Utama
+Menampilkan daftar seluruh *to-do list* beserta status dan kategori kegiatan.
+
+
+---
+
+### ➕ Menambahkan To-Do Baru
+Pengguna dapat menambah tugas baru, menentukan kategori, serta menandai sebagai prioritas dengan ikon khusus.
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/0a37c43ea10d690dafdb48a0d2a3fbf773b4e65b/20f4dd5ae8a54059bf1f5a1ff416f8d1.jpg)
+
+---
+
+### 📅 Menentukan Tanggal
+Setiap tugas dapat dijadwalkan sesuai tanggal pelaksanaan agar lebih teratur.
+
+
+---
+
+### 🎉 Pesan Apresiasi
+Jika semua *to-do list* sudah selesai, aplikasi menampilkan pesan motivasi:  
+**"Selamat! Semua tugas selesai! Anda hebat!"**
+
+
+---
+
+### 🗑️ Menghapus To-Do
+Pengguna dapat menghapus tugas yang sudah tidak diperlukan dengan mudah.
+
 
 ---
 
