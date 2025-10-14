@@ -49,8 +49,6 @@ Meningkatkan efektivitas pengelolaan waktu dan membantu pengguna agar lebih kons
 ---
 
 📸 Cuplikan Tampilan 
-## 📸 Cuplikan Tampilan
-
 Berikut beberapa tampilan dari aplikasi **Priority Hub** 👇  
 
 ### 🏠 Tampilan Utama
@@ -85,5 +83,9 @@ Pengguna dapat menghapus tugas yang sudah tidak diperlukan dengan mudah.
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/3e900afde52368c71a7d78e6231d620d7778658e/ff87cd43015b4e4bbaa3caeeb65c7454.jpg)
 
 ---
+💾 Penggunaan List dalam Aplikasi
+Dalam aplikasi Priority Hub, data to-do list disimpan menggunakan struktur List di dalam kode program. Setiap kali pengguna menambahkan tugas baru, data tersebut akan dimasukkan ke dalam sebuah list yang berisi objek-objek to-do dengan atribut seperti judul kegiatan, kategori, tanggal, serta status prioritas.
+
+Struktur list ini memudahkan aplikasi untuk menampilkan, menghapus, maupun memperbarui status tugas. Misalnya, ketika pengguna mencentang tugas sebagai selesai, aplikasi akan memperbarui status item tersebut di dalam list. Begitu pula saat pengguna menghapus tugas, data tersebut akan dihapus dari list secara otomatis.
 
 © 2025 – Tim Priority Hub
