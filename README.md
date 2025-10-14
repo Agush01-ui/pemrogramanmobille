@@ -49,7 +49,7 @@ Meningkatkan efektivitas pengelolaan waktu dan membantu pengguna agar lebih kons
 ---
 
 📸 Cuplikan Tampilan 
-> *(Tambahkan screenshot aplikasi di bagian ini jika sudah tersedia)*
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/0a37c43ea10d690dafdb48a0d2a3fbf773b4e65b/20f4dd5ae8a54059bf1f5a1ff416f8d1.jpg)
 
 ---
 
