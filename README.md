@@ -21,17 +21,17 @@ Aplikasi ini memiliki antarmuka sederhana namun fungsional untuk meningkatkan pr
 ---
 
 ## 🌟 Fitur Utama
-- ✏️ **Menambahkan To-Do List**  
+✏️ **Menambahkan To-Do List**  
   Pengguna dapat menambah daftar tugas dengan mudah.  
-- 🗂️ **Kategorisasi Aktivitas**  
+🗂️ **Kategorisasi Aktivitas**  
   Setiap tugas dapat dikelompokkan berdasarkan kategori (misalnya: olahraga, pribadi, pekerjaan, lainnya).  
-- 📅 **Pemilihan Tanggal**  
+📅 **Pemilihan Tanggal**  
   Pengguna bisa menetapkan tanggal pelaksanaan untuk setiap tugas.  
-- 🚨 **Tombol Prioritas**  
+🚨 **Tombol Prioritas**  
   Aktifkan toggle khusus jika tugas tersebut bersifat penting atau mendesak.  
-- ✅ **Apresiasi Penyelesaian**  
+✅ **Apresiasi Penyelesaian**  
   Saat semua tugas berhasil diselesaikan, aplikasi menampilkan pesan apresiasi untuk pengguna.  
-- 🗑️ **Pilih & Hapus To-Do List**  
+🗑️ **Pilih & Hapus To-Do List**  
   Pengguna dapat memilih dan menghapus tugas yang sudah tidak diperlukan.
 
 ---
