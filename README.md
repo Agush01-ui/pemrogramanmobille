@@ -9,8 +9,8 @@
 | Nama Lengkap | NIM | Tugas |
 |---------------|-----|--------|
 | Agus | 2310120018 | Logika aplikasi & manajemen data To-Do & Perancangan Prohect |
-| Rifo | 23101200 | Desain UI dan implementasi fitur prioritas |
-| Byan | 23101200 | Integrasi fitur tanggal dan penghapusan tugas |
+| Rifo | 2310120025 | Desain UI dan implementasi fitur prioritas |
+| Byan | 2310120024 | Integrasi fitur tanggal dan penghapusan tugas |
 
 ---
 
