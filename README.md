@@ -68,7 +68,7 @@ Pengguna dapat menambah tugas baru, menentukan kategori, serta menandai sebagai 
 
 ### 📅 Menentukan Tanggal
 Setiap tugas dapat dijadwalkan sesuai tanggal pelaksanaan agar lebih teratur.
-
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/1f6fddef08a108e27642ef4e769d46298cb4d96a/fb4cd08728f743719b9e7796359f982a.jpg)
 
 ---
 
