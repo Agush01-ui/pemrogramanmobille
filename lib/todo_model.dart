@@ -1,5 +1,3 @@
-// todo_model.dart
-
 class Todo {
   String id;
   String title;
