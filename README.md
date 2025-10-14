@@ -75,6 +75,7 @@ Setiap tugas dapat dijadwalkan sesuai tanggal pelaksanaan agar lebih teratur.
 ### 🎉 Pesan Apresiasi
 Jika semua *to-do list* sudah selesai, aplikasi menampilkan pesan motivasi:  
 **"Selamat! Semua tugas selesai! Anda hebat!"**
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/cfa8b36e498fd6b81a5279033ba835a28f3bcb2d/4a9da1e99b6f4cb5845a886817af8c76.jpg)
 
 
 ---
