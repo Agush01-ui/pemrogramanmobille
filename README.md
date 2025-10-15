@@ -88,4 +88,4 @@ Dalam aplikasi Priority Hub, data to-do list disimpan menggunakan struktur List 
 
 Struktur list ini memudahkan aplikasi untuk menampilkan, menghapus, maupun memperbarui status tugas. Misalnya, ketika pengguna mencentang tugas sebagai selesai, aplikasi akan memperbarui status item tersebut di dalam list. Begitu pula saat pengguna menghapus tugas, data tersebut akan dihapus dari list secara otomatis.
 
-© 2025 – Tim Priority Hub
+© 2025 – Tim Priority Hub.
