@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
-import 'todo_model.dart';
+import '../models/todo_model.dart';
 
 const Color primaryColor = Color(0xFF9F7AEA);
 const Color accentColorOrange = Color(0xFFFF9800);
@@ -42,8 +42,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // Data disimpan sementara di memori
-  // KETENTUAN SOAL: Data perlu disimpan sementara dalam memori.
   List<Todo> todos = [
     Todo(
       id: '1',
@@ -82,9 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'Lainnya',
   ];
 
-  // --- LOGIKA UTAMA ---
-
-  // Fungsi untuk menandai tugas selesai
   void toggleTodoStatus(String id) {
     setState(() {
       final index = todos.indexWhere((todo) => todo.id == id);
@@ -93,17 +88,14 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
-    // Cek setelah state diperbarui
     int totalTodos = todos.length;
     int completedTodos = todos.where((t) => t.isCompleted).length;
 
-    // Pemberitahuan apresiasi jika semua tugas selesai
     if (totalTodos > 0 && completedTodos == totalTodos) {
       _showCompletionAppreciation();
     }
   }
 
-  // Fungsi untuk menampilkan apresiasi (Snackbar)
   void _showCompletionAppreciation() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -118,21 +110,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Fungsi untuk menghapus tugas
   void deleteTodo(String id) {
     setState(() {
       todos.removeWhere((todo) => todo.id == id);
     });
   }
 
-  // Fungsi untuk mendapatkan daftar tugas yang difilter dan diurutkan
   List<Todo> get filteredTodos {
     List<Todo> listToFilter = selectedFilter == 'Semua'
         ? todos
         : todos.where((todo) => todo.category == selectedFilter).toList();
 
     return List.from(listToFilter)..sort((a, b) {
-      // Urutkan: Mendesak > Belum Selesai > Selesai
       if (a.isUrgent && !b.isUrgent) return -1;
       if (!a.isUrgent && b.isUrgent) return 1;
 
@@ -147,8 +136,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // --- TAMPILAN TAMBAH/EDIT TUGAS (DIALOG) ---
-
   Future<void> _showAddEditDialog([Todo? todo]) async {
     final isEditing = todo != null;
     String title = todo?.title ?? '';
@@ -161,21 +148,17 @@ class _HomeScreenState extends State<HomeScreen> {
     await showDialog(
       context: context,
       builder: (BuildContext context) {
-        // StatefulBuilder digunakan agar dialog bisa diupdate
         return StatefulBuilder(
           builder: (context, setStateSB) {
-            // KETENTUAN SOAL: Alert/Dialog
             return AlertDialog(
               title: Text(isEditing ? 'Edit Tugas' : 'Tambah Tugas Baru'),
               content: SingleChildScrollView(
                 child: Form(
                   key: formKey,
-                  // KETENTUAN SOAL: menggunakan Column
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      // KETENTUAN SOAL: menggunakan Text
                       TextFormField(
                         initialValue: title,
                         decoration: const InputDecoration(
@@ -190,8 +173,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                       const SizedBox(height: 15),
-
-                      // Kategori (Dropdown)
                       DropdownButtonFormField<String>(
                         value: category,
                         decoration: const InputDecoration(
@@ -210,17 +191,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                       const SizedBox(height: 15),
-
-                      // Deadline
-                      // KETENTUAN SOAL: menggunakan Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // KETENTUAN SOAL: menggunakan Text
                           Text(
                             'Deadline: ${deadline == null ? 'Tidak Ada' : DateFormat('dd/MM/yyyy').format(deadline!)}',
                           ),
-                          // KETENTUAN SOAL: menggunakan TextButton
                           TextButton(
                             onPressed: () async {
                               final pickedDate = await showDatePicker(
@@ -250,9 +226,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       const SizedBox(height: 15),
-
-                      // Prioritas (Switch)
-                      // KETENTUAN SOAL: menggunakan Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -275,20 +248,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: const Text('Batal'),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-                // KETENTUAN SOAL: Tombol "Simpan" menggunakan ElevatedButton
                 ElevatedButton(
                   child: Text(isEditing ? 'Simpan Perubahan' : 'Simpan Tugas'),
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       setState(() {
                         if (isEditing) {
-                          // Update tugas yang sudah ada
                           todo!.title = title;
                           todo.category = category;
                           todo.deadline = deadline;
                           todo.isUrgent = isUrgent;
                         } else {
-                          // Tambah tugas baru
                           todos.add(
                             Todo(
                               id: DateTime.now().millisecondsSinceEpoch
@@ -317,9 +287,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGET KOMPONEN UI ---
-
-  // Widget untuk Chip Filter Kategori
   Widget _buildCategoryChip(String category) {
     final isSelected = selectedFilter == category;
     return GestureDetector(
@@ -328,16 +295,13 @@ class _HomeScreenState extends State<HomeScreen> {
           selectedFilter = category;
         });
       },
-      // KETENTUAN SOAL: menggunakan Container
       child: Container(
         margin: const EdgeInsets.only(right: 8),
-        // KETENTUAN SOAL: menggunakan Padding
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? primaryColor : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
         ),
-        // KETENTUAN SOAL: menggunakan Text
         child: Text(
           category,
           style: TextStyle(
@@ -349,7 +313,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Widget untuk Item Tugas
   Widget _buildTodoItem(Todo todo) {
     Color categoryColor;
     switch (todo.category) {
@@ -366,8 +329,6 @@ class _HomeScreenState extends State<HomeScreen> {
         categoryColor = Colors.green.shade400;
     }
 
-    // KETENTUAN SOAL: Item memiliki ikon hapus & menghapus data
-    // Implementasi HAPUS melalui Dismissible (Swipe)
     return Dismissible(
       key: ValueKey(todo.id),
       direction: DismissDirection.endToStart,
@@ -375,12 +336,9 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.red,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        // KETENTUAN SOAL: menggunakan Ikon (Icons.delete)
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      // KONFIRMASI HAPUS: Memunculkan AlertDialog
       confirmDismiss: (direction) async {
-        // KETENTUAN SOAL: Alert/Dialog
         return await showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -403,14 +361,12 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
-      // EKSEKUSI HAPUS: memanggil deleteTodo(id)
       onDismissed: (direction) {
         deleteTodo(todo.id);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("${todo.title} dihapus")));
       },
-      // KETENTUAN SOAL: menggunakan Card
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8),
         elevation: 1,
@@ -446,13 +402,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          // KETENTUAN SOAL: menggunakan Row (di dalam trailing untuk 2 ikon)
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // KETENTUAN SOAL: menggunakan IconButton
               IconButton(
-                // KETENTUAN SOAL: menggunakan Ikon (Icons.delete)
                 icon: const Icon(Icons.delete_outline, color: Colors.red),
                 onPressed: () async {
                   bool? shouldDelete = await showDialog(
@@ -484,7 +437,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                 },
               ),
-              // KETENTUAN SOAL: menggunakan IconButton
               IconButton(
                 icon: Icon(
                   todo.isCompleted ? Icons.check_circle : Icons.circle_outlined,
@@ -499,7 +451,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Widget khusus untuk Banner
   Widget _buildBanner() {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
@@ -532,7 +483,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          // Widget Animasi Sederhana
           AnimatedContainer(
             duration: const Duration(seconds: 1),
             curve: Curves.easeInOut,
@@ -555,32 +505,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- TAMPILAN UTAMA  ---
-
   @override
   Widget build(BuildContext context) {
     int totalTodos = todos.length;
     int completedTodos = todos.where((t) => t.isCompleted).length;
     double progress = totalTodos == 0 ? 0 : completedTodos / totalTodos;
 
-    // KETENTUAN SOAL: Design Antarmuka (Scaffold, AppBar)
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Container(
         decoration: const BoxDecoration(color: backgroundColor),
         child: CustomScrollView(
           slivers: [
-            // KETENTUAN SOAL: menggunakan AppBar
             SliverAppBar(
-              // JUDUL TELAH DIHAPUS: title: const Text('TASK FLOW', ...)
-              title: const Text(
-                '',
-              ), // Mengganti dengan Text kosong agar AppBar tetap ada
+              title: const Text(''),
               backgroundColor: Colors.transparent,
               elevation: 0,
               pinned: true,
               actions: [
-                // Ikon Notifikasi
                 IconButton(
                   icon: const Icon(
                     Icons.notifications_none,
@@ -593,22 +535,16 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverList(
               delegate: SliverChildListDelegate([
                 _buildBanner(),
-
                 Padding(
-                  // KETENTUAN SOAL: menggunakan Padding
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16.0,
                     vertical: 15.0,
-                  ), // Padding diubah
-                  // KETENTUAN SOAL: menggunakan Column
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      // 1. Header dan Progress
-                      // KETENTUAN SOAL: menggunakan Text
                       Text(
                         'Halo, Pengguna!',
-                        // KETENTUAN SOAL: Proporsional dan mudah digunakan
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -619,9 +555,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                       ),
                       const SizedBox(height: 15),
-
-                      // Progress Bar (Kotak Progress yang lebih menonjol)
-                      // KETENTUAN SOAL: menggunakan Container
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -658,9 +591,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 25),
-
-                      // 2. Filter Kategori (Row)
-                      // KETENTUAN SOAL: menggunakan Row
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
@@ -673,8 +603,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // Header Daftar Tugas
                       Text(
                         'Daftar Tugas (${selectedFilter})',
                         style: TextStyle(
@@ -687,9 +615,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-
-                // 3. Daftar Tugas (Menampilkan List Item)
-                // KETENTUAN SOAL: menggunakan ListView.builder (direpresentasikan dalam SliverList)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: filteredTodos.isEmpty
@@ -699,22 +624,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: filteredTodos.map((todo) {
-                            // KETENTUAN SOAL: menggunakan ListView.builder
-                            // (Di sini menggunakan map().toList() dalam Column yang fungsinya sama)
                             return _buildTodoItem(todo);
                           }).toList(),
                         ),
                 ),
-                const SizedBox(height: 80), // Memberi ruang di bawah
+                const SizedBox(height: 80),
               ]),
             ),
           ],
         ),
       ),
-      // KETENTUAN SOAL: Tombol FloatingActionButton untuk menambah data
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
-        backgroundColor: primaryColor, // Warna Ungu
+        backgroundColor: primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

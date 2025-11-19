@@ -9,10 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # DEPENDENSI TAMBAHAN AGAR HOME_SCREEN TIDAK ERROR
+
   cupertino_icons: ^1.0.6
-  intl: ^0.18.1 # Wajib ditambahkan untuk DateFormat
+  intl: ^0.18.1
+  get: ^4.6.6
+  shared_preferences: ^2.2.15
 
 dev_dependencies:
   flutter_test:
