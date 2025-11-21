@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double _animatedSize = 50.0;
   Timer? _timer;
 
-  String _username = 'Pengguna';
+  String _username = 'Pengguna'; // Menyimpan nama user yang sedang login
   List<Todo> todos = [];
   bool isLoading = false;
 
@@ -41,8 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUsername();
-    _refreshTodos();
+    _initData(); // Panggil fungsi inisialisasi gabungan
 
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) {
@@ -64,6 +63,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // --- LOGIKA DATA & DB ---
 
+  // Fungsi untuk memuat username dulu, baru memuat datanya
+  Future<void> _initData() async {
+    await _loadUsername();
+    await _refreshTodos();
+  }
+
   Future<void> _loadUsername() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -82,9 +87,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // PERBAIKAN: Menggunakan readTodosByUser bukan readAllTodos
   Future<void> _refreshTodos() async {
     setState(() => isLoading = true);
-    final data = await DatabaseHelper.instance.readAllTodos();
+
+    // Mengambil data KHUSUS milik username yang sedang login
+    final data = await DatabaseHelper.instance.readTodosByUser(_username);
+
     if (mounted) {
       setState(() {
         todos = data;
@@ -249,8 +258,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           todo.category = category;
                           todo.deadline = deadline;
                           todo.isUrgent = isUrgent;
+                          // Username tidak diubah saat edit
                           await DatabaseHelper.instance.update(todo);
                         } else {
+                          // PERBAIKAN: Menambahkan parameter username: _username
                           final newTodo = Todo(
                             id: DateTime.now()
                                 .millisecondsSinceEpoch
@@ -260,6 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             deadline: deadline,
                             isUrgent: isUrgent,
                             isCompleted: false,
+                            username: _username, // WAJIB DIISI
                           );
                           await DatabaseHelper.instance.create(newTodo);
                         }
@@ -389,7 +401,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   : TextDecoration.none,
               fontWeight: FontWeight.bold,
               color: todo.isCompleted ? Colors.grey : null,
-              // 'null' agar mengikuti tema dark/light mode
             ),
           ),
           subtitle: Row(
@@ -482,8 +493,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      // Menggunakan context theme untuk support dark mode
-      // Background akan dihandle oleh ThemeData di main.dart
       body: Container(
         child: CustomScrollView(
           slivers: [
@@ -547,8 +556,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).cardColor, // Support Dark Mode
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -598,7 +606,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          // Warna text menyesuaikan tema
                           color: Theme.of(context).textTheme.bodyLarge?.color,
                         ),
                       ),

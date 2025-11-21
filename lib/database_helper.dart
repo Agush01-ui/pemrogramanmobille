@@ -10,7 +10,7 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('todos.db');
+    _database = await _initDB('todos_app_v3.db'); // Versi DB baru
     return _database!;
   }
 
@@ -22,33 +22,45 @@ class DatabaseHelper {
   }
 
   Future _createDB(Database db, int version) async {
-// Pastikan ejaan 'isUrgent' dan 'isCompleted' sama persis (Case Sensitive)
+    // 1. Tabel TODOS (Sekarang ada kolom username)
     await db.execute('''
-  CREATE TABLE todos (
-    id TEXT PRIMARY KEY,
-    title TEXT,
-    category TEXT,
-    deadline TEXT,
-    isUrgent INTEGER,  
-   isCompleted INTEGER
-)
-''');
+    CREATE TABLE todos (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      category TEXT,
+      deadline TEXT,
+      isUrgent INTEGER,
+      isCompleted INTEGER,
+      username TEXT  -- <--- KOLOM BARU PENANDA PEMILIK
+    )
+    ''');
+
+    // 2. Tabel USERS
+    await db.execute('''
+    CREATE TABLE users (
+      username TEXT PRIMARY KEY,
+      password TEXT
+    )
+    ''');
   }
 
-  // CREATE
   Future<int> create(Todo todo) async {
     final db = await instance.database;
     return await db.insert('todos', todo.toMap());
   }
 
-  // READ ALL
-  Future<List<Todo>> readAllTodos() async {
+  // --- FUNGSI PENTING: BACA DATA SPESIFIK USER ---
+  Future<List<Todo>> readTodosByUser(String username) async {
     final db = await instance.database;
-    final result = await db.query('todos');
+    // Filter menggunakan WHERE username = ?
+    final result = await db.query(
+      'todos',
+      where: 'username = ?',
+      whereArgs: [username],
+    );
     return result.map((json) => Todo.fromMap(json)).toList();
   }
 
-  // UPDATE
   Future<int> update(Todo todo) async {
     final db = await instance.database;
     return db.update(
@@ -59,7 +71,6 @@ class DatabaseHelper {
     );
   }
 
-  // DELETE
   Future<int> delete(String id) async {
     final db = await instance.database;
     return await db.delete(
@@ -67,5 +78,26 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  // --- USER FUNCTIONS ---
+  Future<int> registerUser(String username, String password) async {
+    final db = await instance.database;
+    try {
+      return await db
+          .insert('users', {'username': username, 'password': password});
+    } catch (e) {
+      return -1;
+    }
+  }
+
+  Future<bool> loginUser(String username, String password) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'users',
+      where: 'username = ? AND password = ?',
+      whereArgs: [username, password],
+    );
+    return result.isNotEmpty;
   }
 }
