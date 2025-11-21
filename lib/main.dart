@@ -1,3 +1,5 @@
+// lib/main.dart
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
@@ -36,8 +38,13 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
+    // Cek status login DAN pastikan ada ID user yang aktif
+    final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+    final userId = prefs.getString('current_userId'); 
+
     setState(() {
-      _isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+      // User dianggap login hanya jika status true DAN ada userId
+      _isLoggedIn = isLoggedIn && userId != null; 
       _isChecking = false;
     });
   }

@@ -1,6 +1,10 @@
+// lib/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
+import 'database_helper.dart';
+import 'user_model.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,41 +15,80 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController(); 
 
   @override
   void initState() {
     super.initState();
-    _loadLastUsername();
-  }
-
-  // Memuat username terakhir yang tersimpan (Fitur SharedPreferences)
-  void _loadLastUsername() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? lastUser = prefs.getString('last_username');
-    if (lastUser != null) {
-      setState(() {
-        _usernameController.text = lastUser;
-      });
-    }
+    // Tidak memuat username terakhir secara otomatis untuk keamanan yang lebih baik
   }
 
   void _login() async {
-    if (_usernameController.text.isNotEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      // Simpan status login
-      await prefs.setBool('is_logged_in', true);
-      // Simpan data username terakhir (Last Input)
-      await prefs.setString('last_username', _usernameController.text);
+    final username = _usernameController.text;
+    final password = _passwordController.text;
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      }
-    } else {
+    if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harap isi username!')),
+        const SnackBar(content: Text('Harap isi username dan password!')),
+      );
+      return;
+    }
+
+    // 1. Cek apakah user sudah terdaftar
+    User? user = await DatabaseHelper.instance.getUserByUsername(username);
+
+    if (user == null) {
+      // 2. Jika user belum ada (Registrasi otomatis)
+      final newUser = User(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        username: username,
+        password: password,
+      );
+      await DatabaseHelper.instance.createUser(newUser);
+      user = newUser;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Akun baru berhasil didaftarkan dan Anda masuk!')),
+      );
+    } else {
+      // 3. Jika user ada, verifikasi password
+      if (user.password != password) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password salah!')),
+        );
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Selamat datang kembali, ${user.username}!')),
+      );
+    }
+
+    // 4. Simpan status login, ID user aktif, dan username terakhir
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Blok try-catch untuk menyimpan preferensi
+    try {
+        await prefs.setBool('is_logged_in', true);
+        // Menggunakan user.id tanpa ! karena kita yakin user sudah non-null 
+        // pada titik ini (baik dari DB atau new User)
+        await prefs.setString('current_userId', user.id); 
+        await prefs.setString('last_username', user.username);
+        
+        print('DEBUG: Data login disimpan: ${user.username} | ${user.id}');
+    } catch (e) {
+        print('ERROR SIMPAN PREFS: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('Gagal menyimpan data login: $e')),
+        );
+        return; // Hentikan fungsi jika penyimpanan preferensi gagal
+    }
+    
+    // 5. LOGIKA NAVIGASI YANG HILANG (KINI DIKEMBALIKAN)
+    if (mounted) {
+      print('DEBUG: Navigasi ke HomeScreen...');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     }
   }
@@ -70,12 +113,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Color(0xFF3B417A)),
               ),
               const SizedBox(height: 40),
+              // TEXTFIELD USERNAME
               TextField(
                 controller: _usernameController,
                 decoration: const InputDecoration(
                   labelText: 'Username',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // TEXTFIELD PASSWORD
+              TextField(
+                controller: _passwordController,
+                obscureText: true, // Sembunyikan input
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock),
                   filled: true,
                   fillColor: Colors.white,
                 ),
@@ -89,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF9F7AEA),
                   ),
-                  child: const Text('MASUK',
+                  child: const Text('MASUK / DAFTAR',
                       style: TextStyle(color: Colors.white)),
                 ),
               ),

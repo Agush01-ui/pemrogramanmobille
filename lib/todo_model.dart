@@ -5,6 +5,7 @@ class Todo {
   DateTime? deadline;
   bool isUrgent;
   bool isCompleted;
+  String userId; // <<< BARU
 
   Todo({
     required this.id,
@@ -13,6 +14,7 @@ class Todo {
     this.deadline,
     this.isUrgent = false,
     this.isCompleted = false,
+    required this.userId, // <<< BARU
   });
 
   // Konversi dari Map (Database) ke Object Todo
@@ -23,9 +25,9 @@ class Todo {
       category: map['category'],
       deadline:
           map['deadline'] != null ? DateTime.parse(map['deadline']) : null,
-      // SQLite menyimpan bool sebagai integer (0 atau 1)
       isUrgent: map['isUrgent'] == 1,
       isCompleted: map['isCompleted'] == 1,
+      userId: map['userId'], // <<< BARU
     );
   }
 
@@ -38,6 +40,7 @@ class Todo {
       'deadline': deadline?.toIso8601String(),
       'isUrgent': isUrgent ? 1 : 0,
       'isCompleted': isCompleted ? 1 : 0,
+      'userId': userId,
     };
   }
 }

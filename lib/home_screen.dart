@@ -1,3 +1,5 @@
+// lib/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
@@ -5,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'todo_model.dart';
 import 'database_helper.dart';
 import 'login_screen.dart';
-import 'main.dart'; // Diperlukan untuk akses themeNotifier
+import 'main.dart';
 
 const Color primaryColor = Color(0xFF9F7AEA);
 const Color accentColorOrange = Color(0xFFFF9800);
@@ -26,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer;
 
   String _username = 'Pengguna';
+  String _currentUserId = ''; // BARU: Simpan ID user aktif
   List<Todo> todos = [];
   bool isLoading = false;
 
@@ -41,9 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUsername();
-    _refreshTodos();
-
+    _loadUserData(); // Ganti _loadUsername
+    
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) {
         setState(() {
@@ -64,16 +66,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // --- LOGIKA DATA & DB ---
 
-  Future<void> _loadUsername() async {
+  // BARU: Memuat ID User dan Username
+  Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('current_userId');
+
+    if (userId == null || userId.isEmpty) {
+      await _logout(); // Paksa logout jika tidak ada ID user
+      return;
+    }
+
     setState(() {
+      _currentUserId = userId;
       _username = prefs.getString('last_username') ?? 'Pengguna';
     });
+
+    _refreshTodos();
   }
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', false);
+    await prefs.remove('current_userId'); // Hapus ID user aktif
+    
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -83,8 +98,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshTodos() async {
+    if (_currentUserId.isEmpty) return; // Guard
+
     setState(() => isLoading = true);
-    final data = await DatabaseHelper.instance.readAllTodos();
+    // MEMBACA TODO HANYA UNTUK USER YANG AKTIF
+    final data = await DatabaseHelper.instance.readAllTodos(_currentUserId); 
     if (mounted) {
       setState(() {
         todos = data;
@@ -99,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await DatabaseHelper.instance.update(todo);
     _refreshTodos();
 
+    await Future.delayed(Duration.zero);
     int totalTodos = todos.length;
     int completedTodos = todos.where((t) => t.isCompleted).length;
 
@@ -244,11 +263,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
                       try {
+                        if (_currentUserId.isEmpty) return; // Guard
+
                         if (isEditing) {
-                          todo!.title = title;
+                          todo.title = title;
                           todo.category = category;
                           todo.deadline = deadline;
                           todo.isUrgent = isUrgent;
+                          // todo.userId tidak perlu diubah saat update
                           await DatabaseHelper.instance.update(todo);
                         } else {
                           final newTodo = Todo(
@@ -260,6 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             deadline: deadline,
                             isUrgent: isUrgent,
                             isCompleted: false,
+                            userId: _currentUserId, // Kunci: Tambahkan ID user
                           );
                           await DatabaseHelper.instance.create(newTodo);
                         }
@@ -283,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGETS UI ---
+  // --- WIDGETS UI --- (Tetap sama)
 
   Widget _buildCategoryChip(String category) {
     final isSelected = selectedFilter == category;
@@ -472,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- MAIN UI BUILD ---
+  // --- MAIN UI BUILD --- (Tetap sama)
 
   @override
   Widget build(BuildContext context) {
@@ -482,8 +505,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      // Menggunakan context theme untuk support dark mode
-      // Background akan dihandle oleh ThemeData di main.dart
       body: Container(
         child: CustomScrollView(
           slivers: [
