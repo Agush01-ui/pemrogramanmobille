@@ -123,7 +123,7 @@ Menampilkan **homepage** aplikasi **Priority Hub** dalam **Light Mode**. Pada ta
 ---
 
 ###  6. Tampilan Utama Mode Gelap 🌙 
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/3e900afde52368c71a7d78e6231d620d7778658e/ff87cd43015b4e4bbaa3caeeb65c7454.jpg)
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/DarkMode.png?raw=true)
 
 Menampilkan **homepage** aplikasi dalam **Dark Mode**. Sama seperti Light Mode, ditampilkan **0/0 Tugas Selesai** dan tidak ada tugas yang tercatat, namun dengan tampilan gelap yang nyaman untuk kondisi cahaya rendah.
 
