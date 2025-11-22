@@ -88,7 +88,8 @@ Berikut beberapa tampilan dari aplikasi **Priority Hub** 👇
 
 ### 1. Tampilan Awal Halaman Login 🔑
 Menampilkan daftar seluruh *to-do list* beserta status dan kategori kegiatan.
-![image alt]()
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/TampilanLogin.png?raw=true)
+Menunjukkan tampilan awal untuk masuk ke aplikasi, dengan kolom kosong untuk **Username** dan **Password**, serta tombol **MASUK** dan **DAFTAR AKUN BARU**. Pengguna dapat langsung mendaftar atau masuk sesuai akun yang dimiliki.
 
 
 ---
