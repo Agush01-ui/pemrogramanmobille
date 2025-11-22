@@ -8,9 +8,9 @@
 👥 Anggota Tim
 | Nama Lengkap | NIM | Tugas |
 |---------------|-----|--------|
-| Agus | 2310120018 | Logika aplikasi & manajemen data To-Do & Perancangan Project |
-| Rifo | 2310120025 | Desain UI dan implementasi fitur prioritas |
-| Byan | 2310120024 | Integrasi fitur tanggal dan penghapusan tugas |
+| Agus | 2310120018 | Ketua Tim - Logika aplikasi & manajemen data To-Do & Perancangan Project |
+| Rifo | 2310120025 | Desain UI dan implementasi Login SCr |
+| Byan | 2310120024 | Intergrasi CRUD dengan SQLite dan SharedPreferences |
 
 ---
 
