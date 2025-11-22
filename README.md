@@ -116,13 +116,13 @@ Menunjukkan halaman utama dari tampilan aplikasi PriorityHub
 ---
 
 ### 5. Tampilan Utama Mode Terang (Light)☀️
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/cfa8b36e498fd6b81a5279033ba835a28f3bcb2d/4a9da1e99b6f4cb5845a886817af8c76.jpg)
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/TampilanLight.png?raw=true)
 
 Menampilkan **homepage** aplikasi **Priority Hub** dalam **Light Mode**. Pada tampilan ini, terdapat informasi **0/0 Tugas Selesai** dan daftar tugas masih kosong, sehingga pengguna dapat langsung menambahkan tugas baru.
 
 ---
 
-###  6. Tampilan Utama Mode Gelap 🌙 
+###  6. Tampilan Utama Mode Gelap (Dark)🌙 
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/DarkMode.png?raw=true)
 
 Menampilkan **homepage** aplikasi dalam **Dark Mode**. Sama seperti Light Mode, ditampilkan **0/0 Tugas Selesai** dan tidak ada tugas yang tercatat, namun dengan tampilan gelap yang nyaman untuk kondisi cahaya rendah.
