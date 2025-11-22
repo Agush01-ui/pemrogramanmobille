@@ -95,7 +95,7 @@ Menunjukkan tampilan awal untuk masuk ke aplikasi, dengan kolom kosong untuk **U
 ---
 
 ### 2. Halaman Login Setelah Registrasi Berhasil ✅
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/0a37c43ea10d690dafdb48a0d2a3fbf773b4e65b/20f4dd5ae8a54059bf1f5a1ff416f8d1.jpg)
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/HalamanLogin.png?raw=true)
 
 Menampilkan halaman login setelah pengguna berhasil mendaftar. Terdapat notifikasi hijau di bawah yang menandakan registrasi berhasil, dan kolom **Username** serta **Password** sudah terisi secara otomatis, memudahkan pengguna untuk langsung masuk.
 
