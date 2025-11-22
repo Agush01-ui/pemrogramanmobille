@@ -130,7 +130,7 @@ Menampilkan **homepage** aplikasi dalam **Dark Mode**. Sama seperti Light Mode, 
 ---
 
 ###  7. Penambahan Item/Task To Do ➕
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/3e900afde52368c71a7d78e6231d620d7778658e/ff87cd43015b4e4bbaa3caeeb65c7454.jpg)
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/Task.png?raw=true)
 
 Menunjukkan proses penambahan tugas baru di aplikasi **Priority Hub**. Pengguna dapat mengisi **nama tugas**, menentukan **tanggal jatuh tempo**, serta menandai **tingkat prioritas**. Setelah disimpan, tugas baru langsung muncul di daftar tugas utama, siap untuk dikelola dan diselesaikan.
 ---
