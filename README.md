@@ -94,30 +94,51 @@ Menunjukkan tampilan awal untuk masuk ke aplikasi, dengan kolom kosong untuk **U
 
 ---
 
-###2. Halaman Login Setelah Registrasi Berhasil ✅
+### 2. Halaman Login Setelah Registrasi Berhasil ✅
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/0a37c43ea10d690dafdb48a0d2a3fbf773b4e65b/20f4dd5ae8a54059bf1f5a1ff416f8d1.jpg)
 
 Menampilkan halaman login setelah pengguna berhasil mendaftar. Terdapat notifikasi hijau di bawah yang menandakan registrasi berhasil, dan kolom **Username** serta **Password** sudah terisi secara otomatis, memudahkan pengguna untuk langsung masuk.
 
 ---
 
-### 📅 Menentukan Tanggal
-Setiap tugas dapat dijadwalkan sesuai tanggal pelaksanaan agar lebih teratur.
+### 3. Halaman Login dengan Pesan Kesalahan ❌
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/1f6fddef08a108e27642ef4e769d46298cb4d96a/fb4cd08728f743719b9e7796359f982a.jpg)
 
+Menunjukkan halaman login ketika pengguna memasukkan **Username** atau **Password** yang salah. Terdapat notifikasi merah di bawah kolom login yang memberi tahu bahwa kredensial yang dimasukkan tidak valid.
+
 ---
 
-### 🎉 Pesan Apresiasi
-Jika semua *to-do list* sudah selesai, aplikasi menampilkan pesan motivasi:  
-**"Selamat! Semua tugas selesai! Anda hebat!"**
+### 4. Halaman HomePage ❌
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/1f6fddef08a108e27642ef4e769d46298cb4d96a/fb4cd08728f743719b9e7796359f982a.jpg)
+
+Menunjukkan halaman utama dari tampilan aplikasi PriorityHub
+
+---
+
+### 5. Tampilan Utama Mode Terang (Light)☀️
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/cfa8b36e498fd6b81a5279033ba835a28f3bcb2d/4a9da1e99b6f4cb5845a886817af8c76.jpg)
 
+Menampilkan **homepage** aplikasi **Priority Hub** dalam **Light Mode**. Pada tampilan ini, terdapat informasi **0/0 Tugas Selesai** dan daftar tugas masih kosong, sehingga pengguna dapat langsung menambahkan tugas baru.
 
 ---
 
-### 🗑️ Menghapus To-Do
-Pengguna dapat menghapus tugas yang sudah tidak diperlukan dengan mudah.
+###  6. Tampilan Utama Mode Gelap 🌙 
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/3e900afde52368c71a7d78e6231d620d7778658e/ff87cd43015b4e4bbaa3caeeb65c7454.jpg)
+
+Menampilkan **homepage** aplikasi dalam **Dark Mode**. Sama seperti Light Mode, ditampilkan **0/0 Tugas Selesai** dan tidak ada tugas yang tercatat, namun dengan tampilan gelap yang nyaman untuk kondisi cahaya rendah.
+
+---
+
+###  7. Penambahan Item/Task To Do ➕
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/3e900afde52368c71a7d78e6231d620d7778658e/ff87cd43015b4e4bbaa3caeeb65c7454.jpg)
+
+Menunjukkan proses penambahan tugas baru di aplikasi **Priority Hub**. Pengguna dapat mengisi **nama tugas**, menentukan **tanggal jatuh tempo**, serta menandai **tingkat prioritas**. Setelah disimpan, tugas baru langsung muncul di daftar tugas utama, siap untuk dikelola dan diselesaikan.
+---
+
+###  8. Tampilan Utama Setelah Semua Tugas Selesai 🎉
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/3e900afde52368c71a7d78e6231d620d7778658e/ff87cd43015b4e4bbaa3caeeb65c7454.jpg)
+
+Menampilkan halaman utama setelah semua tugas selesai dicentang. Tampilan menunjukkan **2/2 Tugas Selesai** dan muncul pesan ucapan selamat berwarna merah muda, memberikan pengalaman positif kepada pengguna ketika berhasil menyelesaikan semua tugas.
 
 ---
 ## Penyimpanan Data 💾
