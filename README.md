@@ -136,7 +136,7 @@ Menunjukkan proses penambahan tugas baru di aplikasi **Priority Hub**. Pengguna 
 ---
 
 ###  8. Tampilan Utama Setelah Semua Tugas Selesai 🎉
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/3e900afde52368c71a7d78e6231d620d7778658e/ff87cd43015b4e4bbaa3caeeb65c7454.jpg)
+![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/MengerjakanTask.png?raw=true)
 
 Menampilkan halaman utama setelah semua tugas selesai dicentang. Tampilan menunjukkan **2/2 Tugas Selesai** dan muncul pesan ucapan selamat berwarna merah muda, memberikan pengalaman positif kepada pengguna ketika berhasil menyelesaikan semua tugas.
 
