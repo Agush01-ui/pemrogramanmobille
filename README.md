@@ -87,16 +87,17 @@ Meningkatkan efektivitas pengelolaan waktu dan membantu pengguna agar lebih kons
 Berikut beberapa tampilan dari aplikasi **Priority Hub** 👇  
 
 ### 1. Tampilan Awal Halaman Login 🔑
-Menampilkan daftar seluruh *to-do list* beserta status dan kategori kegiatan.
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/TampilanLogin.png?raw=true)
+
 Menunjukkan tampilan awal untuk masuk ke aplikasi, dengan kolom kosong untuk **Username** dan **Password**, serta tombol **MASUK** dan **DAFTAR AKUN BARU**. Pengguna dapat langsung mendaftar atau masuk sesuai akun yang dimiliki.
 
 
 ---
 
-### ➕ Menambahkan To-Do Baru
-Pengguna dapat menambah tugas baru, menentukan kategori, serta menandai sebagai prioritas dengan ikon khusus.
+###2. Halaman Login Setelah Registrasi Berhasil ✅
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/0a37c43ea10d690dafdb48a0d2a3fbf773b4e65b/20f4dd5ae8a54059bf1f5a1ff416f8d1.jpg)
+
+Menampilkan halaman login setelah pengguna berhasil mendaftar. Terdapat notifikasi hijau di bawah yang menandakan registrasi berhasil, dan kolom **Username** serta **Password** sudah terisi secara otomatis, memudahkan pengguna untuk langsung masuk.
 
 ---
 
