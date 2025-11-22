@@ -35,6 +35,50 @@ Aplikasi ini memiliki antarmuka sederhana namun fungsional untuk meningkatkan pr
   Pengguna dapat memilih dan menghapus tugas yang sudah tidak diperlukan.
 
 ---
+Fitur Tambahan
+### 1. Login 🔐
+Priority Hub menerapkan **Authentication System** untuk fitur **Masuk** dan **Daftar**, sehingga pengguna dapat:
+
+- Membuat akun baru dengan aman  
+- Masuk ke akun mereka secara terproteksi  
+- Menyimpan data tugas secara terpersonal menggunakan **penyimpanan lokal / database**  
+
+Fitur ini memastikan setiap data tugas terkait langsung dengan akun pengguna, menjaga keamanan dan privasi.
+
+---
+
+### 2. Light/Dark Mode 🌞🌙
+Pengguna dapat **beralih antara Light dan Dark Mode**, memberikan fleksibilitas visual sesuai preferensi dan kondisi cahaya:
+
+- **Light Mode**: Cocok untuk penggunaan di lingkungan terang  
+- **Dark Mode**: Nyaman untuk kondisi gelap atau malam hari  
+
+Fitur ini meningkatkan pengalaman visual dan menambahkan personalisasi aplikasi.
+
+---
+
+### 3. Penyimpanan Data Lokal (SQLite & SharedPreferences) 💾
+Priority Hub menggunakan kombinasi **SQLite** dan **SharedPreferences** untuk manajemen data:
+
+- **SQLite**  
+  Digunakan untuk menyimpan daftar tugas secara terstruktur, memungkinkan:  
+  - CRUD (Create, Read, Update, Delete) data tugas  
+  - Data tersimpan permanen meski aplikasi ditutup  
+
+- **SharedPreferences**  
+  Digunakan untuk menyimpan **pengaturan pengguna** seperti:  
+  - Mode tampilan (Light/Dark)  
+  - Data terakhir yang digunakan atau preferensi sederhana lainnya  
+
+Dependencies yang digunakan di Flutter:
+
+```yaml
+dependencies:
+  intl: ^0.18.0
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  shared_preferences: ^2.2.0
+---
 
 💡 Tujuan
 Meningkatkan efektivitas pengelolaan waktu dan membantu pengguna agar lebih konsisten menyelesaikan kegiatan berdasarkan prioritasnya.
@@ -83,9 +127,27 @@ Pengguna dapat menghapus tugas yang sudah tidak diperlukan dengan mudah.
 ![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/3e900afde52368c71a7d78e6231d620d7778658e/ff87cd43015b4e4bbaa3caeeb65c7454.jpg)
 
 ---
-💾 Penggunaan List dalam Aplikasi
-Dalam aplikasi Priority Hub, data to-do list disimpan menggunakan struktur List di dalam kode program. Setiap kali pengguna menambahkan tugas baru, data tersebut akan dimasukkan ke dalam sebuah list yang berisi objek-objek to-do dengan atribut seperti judul kegiatan, kategori, tanggal, serta status prioritas.
+## Penyimpanan Data 💾
 
-Struktur list ini memudahkan aplikasi untuk menampilkan, menghapus, maupun memperbarui status tugas. Misalnya, ketika pengguna mencentang tugas sebagai selesai, aplikasi akan memperbarui status item tersebut di dalam list. Begitu pula saat pengguna menghapus tugas, data tersebut akan dihapus dari list secara otomatis.
+Priority Hub menyimpan data pengguna melalui dua mekanisme utama:
+
+### 1. SQLite
+- Menyimpan daftar tugas secara **terstruktur** di database lokal.  
+- Mendukung operasi **CRUD**:  
+  - **Create**: Tambah tugas baru  
+  - **Read**: Tampilkan daftar tugas  
+  - **Update**: Ubah tugas (status, prioritas, tanggal)  
+  - **Delete**: Hapus tugas  
+- Data tersimpan **permanen di perangkat**, tetap ada meski aplikasi ditutup.
+
+### 2. SharedPreferences
+- Menyimpan **pengaturan pengguna** seperti mode Light/Dark atau data terakhir yang digunakan.  
+- Data disimpan dalam bentuk **key-value**, mudah diakses saat aplikasi dibuka kembali.  
+- Memastikan aplikasi selalu menampilkan preferensi pengguna secara otomatis.
+
+**Alur singkat:**  
+1. Tambah/ubah tugas → disimpan di **SQLite**  
+2. Ubah pengaturan → disimpan di **SharedPreferences**  
+3. Buka aplikasi → SQLite + SharedPreferences → data & pengaturan siap digunakan
 
 © 2025 – Tim Priority Hub.
