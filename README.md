@@ -53,7 +53,7 @@ Berikut beberapa tampilan dari aplikasi **Priority Hub** 👇
 
 ### 🏠 Tampilan Utama
 Menampilkan daftar seluruh *to-do list* beserta status dan kategori kegiatan.
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/7d48dec1e9d39fb19fcbd6674d8b53861d72b76c/73a372a38e3c40f0ab71af62fd6423d5.jpg)
+![image alt]()
 
 
 ---
