@@ -70,15 +70,6 @@ Priority Hub menggunakan kombinasi **SQLite** dan **SharedPreferences** untuk ma
   - Mode tampilan (Light/Dark)  
   - Data terakhir yang digunakan atau preferensi sederhana lainnya  
 
-Dependencies yang digunakan di Flutter:
-
-```yaml
-dependencies:
-  intl: ^0.18.0
-  sqflite: ^2.3.0
-  path: ^1.8.3
-  shared_preferences: ^2.2.0
----
 
 💡 Tujuan
 Meningkatkan efektivitas pengelolaan waktu dan membantu pengguna agar lebih konsisten menyelesaikan kegiatan berdasarkan prioritasnya.
