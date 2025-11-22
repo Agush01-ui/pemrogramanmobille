@@ -86,7 +86,7 @@ Meningkatkan efektivitas pengelolaan waktu dan membantu pengguna agar lebih kons
 📸 Cuplikan Tampilan 
 Berikut beberapa tampilan dari aplikasi **Priority Hub** 👇  
 
-### 🏠 Tampilan Utama
+### 1. Tampilan Awal Halaman Login 🔑
 Menampilkan daftar seluruh *to-do list* beserta status dan kategori kegiatan.
 ![image alt]()
 
