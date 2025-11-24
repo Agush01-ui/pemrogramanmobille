@@ -10,7 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # Dependencies Tambahan (Sesuai Soal)
   intl: ^0.18.0
   sqflite: ^2.3.0
   path: ^1.8.3
