@@ -5,7 +5,7 @@ class Todo {
   DateTime? deadline;
   bool isUrgent;
   bool isCompleted;
-  String username; // <--- PROPERTI BARU (PEMILIK TUGAS)
+  String username;
 
   Todo({
     required this.id,
@@ -14,7 +14,7 @@ class Todo {
     this.deadline,
     this.isUrgent = false,
     this.isCompleted = false,
-    required this.username, // <--- WAJIB DIISI
+    required this.username,
   });
 
   // Konversi dari Database ke Object
@@ -27,7 +27,7 @@ class Todo {
           map['deadline'] != null ? DateTime.parse(map['deadline']) : null,
       isUrgent: map['isUrgent'] == 1,
       isCompleted: map['isCompleted'] == 1,
-      username: map['username'] ?? 'Pengguna', // <--- AMBIL DARI DB
+      username: map['username'] ?? 'Pengguna',
     );
   }
 

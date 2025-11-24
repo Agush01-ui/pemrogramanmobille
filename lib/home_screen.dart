@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'todo_model.dart';
 import 'database_helper.dart';
 import 'login_screen.dart';
-import 'main.dart'; // Diperlukan untuk akses themeNotifier
+import 'main.dart';
 
 const Color primaryColor = Color(0xFF9F7AEA);
 const Color accentColorOrange = Color(0xFFFF9800);
@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double _animatedSize = 50.0;
   Timer? _timer;
 
-  String _username = 'Pengguna'; // Menyimpan nama user yang sedang login
+  String _username = 'Pengguna';
   List<Todo> todos = [];
   bool isLoading = false;
 
@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initData(); // Panggil fungsi inisialisasi gabungan
+    _initData();
 
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) {
@@ -63,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // --- LOGIKA DATA & DB ---
 
-  // Fungsi untuk memuat username dulu, baru memuat datanya
   Future<void> _initData() async {
     await _loadUsername();
     await _refreshTodos();
@@ -87,11 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // PERBAIKAN: Menggunakan readTodosByUser bukan readAllTodos
   Future<void> _refreshTodos() async {
     setState(() => isLoading = true);
 
-    // Mengambil data KHUSUS milik username yang sedang login
     final data = await DatabaseHelper.instance.readTodosByUser(_username);
 
     if (mounted) {
@@ -152,8 +149,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return 0;
       });
   }
-
-  // --- DIALOG TAMBAH/EDIT ---
 
   Future<void> _showAddEditDialog([Todo? todo]) async {
     final isEditing = todo != null;
@@ -261,7 +256,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           // Username tidak diubah saat edit
                           await DatabaseHelper.instance.update(todo);
                         } else {
-                          // PERBAIKAN: Menambahkan parameter username: _username
                           final newTodo = Todo(
                             id: DateTime.now()
                                 .millisecondsSinceEpoch

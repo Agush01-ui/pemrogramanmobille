@@ -10,7 +10,7 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('todos_app_v3.db'); // Versi DB baru
+    _database = await _initDB('todos_app_v3.db');
     return _database!;
   }
 
@@ -22,7 +22,6 @@ class DatabaseHelper {
   }
 
   Future _createDB(Database db, int version) async {
-    // 1. Tabel TODOS (Sekarang ada kolom username)
     await db.execute('''
     CREATE TABLE todos (
       id TEXT PRIMARY KEY,
@@ -49,7 +48,6 @@ class DatabaseHelper {
     return await db.insert('todos', todo.toMap());
   }
 
-  // --- FUNGSI PENTING: BACA DATA SPESIFIK USER ---
   Future<List<Todo>> readTodosByUser(String username) async {
     final db = await instance.database;
     // Filter menggunakan WHERE username = ?
@@ -80,7 +78,6 @@ class DatabaseHelper {
     );
   }
 
-  // --- USER FUNCTIONS ---
   Future<int> registerUser(String username, String password) async {
     final db = await instance.database;
     try {
