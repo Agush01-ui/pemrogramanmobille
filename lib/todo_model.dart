@@ -5,7 +5,7 @@ class Todo {
   DateTime? deadline;
   bool isUrgent;
   bool isCompleted;
-  String userId; // <<< BARU
+  String username;
 
   Todo({
     required this.id,
@@ -14,10 +14,10 @@ class Todo {
     this.deadline,
     this.isUrgent = false,
     this.isCompleted = false,
-    required this.userId, // <<< BARU
+    required this.username,
   });
 
-  // Konversi dari Map (Database) ke Object Todo
+  // Konversi dari Database ke Object
   factory Todo.fromMap(Map<String, dynamic> map) {
     return Todo(
       id: map['id'],
@@ -27,11 +27,11 @@ class Todo {
           map['deadline'] != null ? DateTime.parse(map['deadline']) : null,
       isUrgent: map['isUrgent'] == 1,
       isCompleted: map['isCompleted'] == 1,
-      userId: map['userId'], // <<< BARU
+      username: map['username'] ?? 'Pengguna',
     );
   }
 
-  // Konversi dari Object Todo ke Map (Database)
+  // Konversi dari Object ke Database
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -40,7 +40,7 @@ class Todo {
       'deadline': deadline?.toIso8601String(),
       'isUrgent': isUrgent ? 1 : 0,
       'isCompleted': isCompleted ? 1 : 0,
-      'userId': userId,
+      'username': username, // <--- SIMPAN KE DB
     };
   }
 }
