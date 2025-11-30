@@ -3,11 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
+// Notifier global untuk Tema agar bisa diakses dari mana saja
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 1. Muat preferensi tema terakhir dari SharedPreferences
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('is_dark_mode') ?? false;
   themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
@@ -48,6 +50,7 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
+    // 2. Gunakan ValueListenableBuilder untuk mendengarkan perubahan tema
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentMode, child) {
@@ -72,7 +75,7 @@ class _MyAppState extends State<MyApp> {
             ),
           ),
 
-          // Konfigurasi Tema Gelap
+          // Konfigurasi Tema Gelap (Fitur Wajib)
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: Colors.deepPurple,

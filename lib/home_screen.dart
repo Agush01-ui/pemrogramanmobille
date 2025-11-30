@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'todo_model.dart';
 import 'database_helper.dart';
 import 'login_screen.dart';
-import 'main.dart';
+import 'main.dart'; // Diperlukan untuk akses themeNotifier
 
 const Color primaryColor = Color(0xFF9F7AEA);
 const Color accentColorOrange = Color(0xFFFF9800);
@@ -28,6 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String _username = 'Pengguna';
   List<Todo> todos = [];
   bool isLoading = false;
+
+  // --- FITUR BARU: TIMESTAMP CACHE ---
+  DateTime? _lastRefreshTime;
 
   String selectedFilter = 'Semua';
   final List<String> categories = [
@@ -61,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // --- LOGIKA DATA & DB ---
+  // --- LOGIKA DATA ---
 
   Future<void> _initData() async {
     await _loadUsername();
@@ -86,21 +89,55 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // --- FITUR BARU: REFRESH DENGAN NOTIFIKASI & TIMESTAMP ---
   Future<void> _refreshTodos() async {
     setState(() => isLoading = true);
 
+    // Ambil data dari SQLite
     final data = await DatabaseHelper.instance.readTodosByUser(_username);
 
     if (mounted) {
       setState(() {
         todos = data;
         isLoading = false;
+        // Update Timestamp Terakhir Refresh
+        _lastRefreshTime = DateTime.now();
       });
+
+      // Tampilkan Notifikasi "Data from Cache"
+      ScaffoldMessenger.of(context).clearSnackBars(); // Hapus snackbar lama
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Data from Cache (Local DB)"),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
+  // --- FITUR BARU: TOMBOL CLEAR CACHE  ---
+  void _clearCache() {
+    setState(() {
+      todos.clear(); // Kosongkan list di memori (tapi DB aman)
+      _lastRefreshTime = null; // Reset waktu
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Cache Cleared! Pull or Add item to refresh."),
+        backgroundColor: Colors.redAccent,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   Future<void> toggleTodoStatus(
-      String id, bool currentStatus, Todo todo) async {
+    String id,
+    bool currentStatus,
+    Todo todo,
+  ) async {
     todo.isCompleted = !currentStatus;
     await DatabaseHelper.instance.update(todo);
     _refreshTodos();
@@ -137,18 +174,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ? todos
         : todos.where((todo) => todo.category == selectedFilter).toList();
 
-    return List.from(listToFilter)
-      ..sort((a, b) {
-        if (a.isUrgent && !b.isUrgent) return -1;
-        if (!a.isUrgent && b.isUrgent) return 1;
-        if (!a.isCompleted && b.isCompleted) return -1;
-        if (a.isCompleted && !b.isCompleted) return 1;
-        if (a.deadline != null && b.deadline != null) {
-          return a.deadline!.compareTo(b.deadline!);
-        }
-        return 0;
-      });
+    return List.from(listToFilter)..sort((a, b) {
+      if (a.isUrgent && !b.isUrgent) return -1;
+      if (!a.isUrgent && b.isUrgent) return 1;
+      if (!a.isCompleted && b.isCompleted) return -1;
+      if (a.isCompleted && !b.isCompleted) return 1;
+      if (a.deadline != null && b.deadline != null) {
+        return a.deadline!.compareTo(b.deadline!);
+      }
+      return 0;
+    });
   }
+
+  // --- DIALOG TAMBAH/EDIT ---
 
   Future<void> _showAddEditDialog([Todo? todo]) async {
     final isEditing = todo != null;
@@ -175,8 +213,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: <Widget>[
                       TextFormField(
                         initialValue: title,
-                        decoration:
-                            const InputDecoration(labelText: 'Nama Tugas'),
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Tugas',
+                        ),
                         onChanged: (value) => title = value,
                         validator: (value) => value == null || value.isEmpty
                             ? 'Tidak boleh kosong'
@@ -185,11 +224,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 15),
                       DropdownButtonFormField<String>(
                         value: category,
-                        decoration:
-                            const InputDecoration(labelText: 'Kategori'),
+                        decoration: const InputDecoration(
+                          labelText: 'Kategori',
+                        ),
                         items: categories.map((String value) {
                           return DropdownMenuItem<String>(
-                              value: value, child: Text(value));
+                            value: value,
+                            child: Text(value),
+                          );
                         }).toList(),
                         onChanged: (String? newValue) {
                           if (newValue != null)
@@ -253,19 +295,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           todo.category = category;
                           todo.deadline = deadline;
                           todo.isUrgent = isUrgent;
-                          // Username tidak diubah saat edit
                           await DatabaseHelper.instance.update(todo);
                         } else {
                           final newTodo = Todo(
-                            id: DateTime.now()
-                                .millisecondsSinceEpoch
+                            id: DateTime.now().millisecondsSinceEpoch
                                 .toString(),
                             title: title,
                             category: category,
                             deadline: deadline,
                             isUrgent: isUrgent,
                             isCompleted: false,
-                            username: _username, // WAJIB DIISI
+                            username: _username,
                           );
                           await DatabaseHelper.instance.create(newTodo);
                         }
@@ -348,8 +388,9 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (BuildContext context) {
             return AlertDialog(
               title: const Text("Konfirmasi Hapus"),
-              content:
-                  const Text("Apakah Anda yakin ingin menghapus tugas ini?"),
+              content: const Text(
+                "Apakah Anda yakin ingin menghapus tugas ini?",
+              ),
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
@@ -366,9 +407,9 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       onDismissed: (direction) {
         deleteTodo(todo.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${todo.title} dihapus")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("${todo.title} dihapus")));
       },
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -496,6 +537,18 @@ class _HomeScreenState extends State<HomeScreen> {
               elevation: 0,
               pinned: true,
               actions: [
+                // --- FITUR BARU: TOMBOL CLEAR CACHE  ---
+                Tooltip(
+                  message: "Clear Cache",
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.cleaning_services,
+                      color: Colors.orange,
+                    ),
+                    onPressed: _clearCache,
+                  ),
+                ),
+
                 // TEMA TOGGLE
                 IconButton(
                   icon: Icon(
@@ -510,8 +563,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     final prefs = await SharedPreferences.getInstance();
                     final isCurrentlyDark =
                         themeNotifier.value == ThemeMode.dark;
-                    final newMode =
-                        isCurrentlyDark ? ThemeMode.light : ThemeMode.dark;
+                    final newMode = isCurrentlyDark
+                        ? ThemeMode.light
+                        : ThemeMode.dark;
 
                     themeNotifier.value = newMode;
                     await prefs.setBool('is_dark_mode', !isCurrentlyDark);
@@ -535,17 +589,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        'Halo, $_username!',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Halo, $_username!',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          // Tombol Reload manual
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: _refreshTodos,
+                          ),
+                        ],
                       ),
                       Text(
                         'Siap menghadapi hari ini?',
                         style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                       ),
+
+                      const SizedBox(height: 5),
+                      // --- FITUR BARU: TAMPILAN TIMESTAMP  ---
+                      Text(
+                        _lastRefreshTime == null
+                            ? 'Belum ada data'
+                            : 'Terakhir refresh: ${DateFormat('HH:mm:ss').format(_lastRefreshTime!)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).primaryColor,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+
                       const SizedBox(height: 15),
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -612,15 +690,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : filteredTodos.isEmpty
-                          ? const Center(
-                              child: Text("Tidak ada tugas di kategori ini."),
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: filteredTodos.map((todo) {
-                                return _buildTodoItem(todo);
-                              }).toList(),
-                            ),
+                      ? Center(
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 20),
+                              const Icon(
+                                Icons.folder_open,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                              Text(
+                                _lastRefreshTime == null
+                                    ? "Cache Cleared"
+                                    : "Tidak ada tugas.",
+                              ),
+                            ],
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: filteredTodos.map((todo) {
+                            return _buildTodoItem(todo);
+                          }).toList(),
+                        ),
                 ),
                 const SizedBox(height: 80),
               ]),
