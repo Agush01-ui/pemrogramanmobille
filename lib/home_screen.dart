@@ -30,6 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = false;
   DateTime? _lastRefreshTime;
 
+  // --- FITUR BARU: TIMESTAMP CACHE ---
+  DateTime? _lastRefreshTime;
+
   String selectedFilter = 'Semua';
   final List<String> categories = [
     'Pekerjaan',
@@ -62,7 +65,12 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // --- LOGIKA DATA & DB ---
+  // --- LOGIKA DATA ---
+
+  Future<void> _initData() async {
+    await _loadUsername();
+    await _refreshTodos();
+  }
 
   Future<void> _initData() async {
     await _loadUsername();
@@ -87,18 +95,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // --- FITUR BARU: REFRESH DENGAN NOTIFIKASI & TIMESTAMP ---
   Future<void> _refreshTodos() async {
     setState(() => isLoading = true);
 
+    // Ambil data dari SQLite
     final data = await DatabaseHelper.instance.readTodosByUser(_username);
+
     if (mounted) {
       setState(() {
         todos = data;
         isLoading = false;
+        // Update Timestamp Terakhir Refresh
         _lastRefreshTime = DateTime.now();
       });
 
-      ScaffoldMessenger.of(context).clearSnackBars();
+      // Tampilkan Notifikasi "Data from Cache"
+      ScaffoldMessenger.of(context).clearSnackBars(); // Hapus snackbar lama
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Data from Cache (Local DB)"),
@@ -110,17 +123,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // --- FITUR BARU: TOMBOL CLEAR CACHE  ---
   void _clearCache() {
     setState(() {
-      todos.clear();
-      _lastRefreshTime = null;
+      todos.clear(); // Kosongkan list di memori (tapi DB aman)
+      _lastRefreshTime = null; // Reset waktu
     });
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Cache Cleared!")));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Cache Cleared! Pull or Add item to refresh."),
+        backgroundColor: Colors.redAccent,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> toggleTodoStatus(
-      String id, bool currentStatus, Todo todo) async {
+    String id,
+    bool currentStatus,
+    Todo todo,
+  ) async {
     todo.isCompleted = !currentStatus;
     await DatabaseHelper.instance.update(todo);
     // Contoh penggunaan Provider: Increment counter setiap kali tugas selesai
@@ -154,17 +177,16 @@ class _HomeScreenState extends State<HomeScreen> {
         ? todos
         : todos.where((todo) => todo.category == selectedFilter).toList();
 
-    return List.from(listToFilter)
-      ..sort((a, b) {
-        if (a.isUrgent && !b.isUrgent) return -1;
-        if (!a.isUrgent && b.isUrgent) return 1;
-        if (!a.isCompleted && b.isCompleted) return -1;
-        if (a.isCompleted && !b.isCompleted) return 1;
-        if (a.deadline != null && b.deadline != null) {
-          return a.deadline!.compareTo(b.deadline!);
-        }
-        return 0;
-      });
+    return List.from(listToFilter)..sort((a, b) {
+      if (a.isUrgent && !b.isUrgent) return -1;
+      if (!a.isUrgent && b.isUrgent) return 1;
+      if (!a.isCompleted && b.isCompleted) return -1;
+      if (a.isCompleted && !b.isCompleted) return 1;
+      if (a.deadline != null && b.deadline != null) {
+        return a.deadline!.compareTo(b.deadline!);
+      }
+      return 0;
+    });
   }
 
   Future<void> _showAddEditDialog([Todo? todo]) async {
@@ -190,22 +212,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: <Widget>[
                       TextFormField(
                         initialValue: title,
-                        decoration:
-                            const InputDecoration(labelText: 'Nama Tugas'),
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Tugas',
+                        ),
                         onChanged: (value) => title = value,
                         validator: (value) =>
                             value!.isEmpty ? 'Tidak boleh kosong' : null,
                       ),
                       const SizedBox(height: 15),
                       DropdownButtonFormField<String>(
-                        initialValue: category,
-                        decoration:
-                            const InputDecoration(labelText: 'Kategori'),
-                        items: categories
-                            .map((v) =>
-                                DropdownMenuItem(value: v, child: Text(v)))
-                            .toList(),
-                        onChanged: (v) => setStateSB(() => category = v!),
+                        value: category,
+                        decoration: const InputDecoration(
+                          labelText: 'Kategori',
+                        ),
+                        items: categories.map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null)
+                            setStateSB(() => category = newValue);
+                        },
                       ),
                       const SizedBox(height: 15),
                       Row(
@@ -260,15 +289,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           await DatabaseHelper.instance.update(todo);
                         } else {
                           final newTodo = Todo(
-                            id: DateTime.now()
-                                .millisecondsSinceEpoch
+                            id: DateTime.now().millisecondsSinceEpoch
                                 .toString(),
                             title: title,
                             category: category,
                             deadline: deadline,
                             isUrgent: isUrgent,
                             isCompleted: false,
-                            username: _username, // WAJIB DIISI
+                            username: _username,
                           );
                           await DatabaseHelper.instance.create(newTodo);
                         }
@@ -314,24 +342,99 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTodoItem(Todo todo) {
-    return Card(
-      child: ListTile(
-        leading: Icon(
-            todo.isUrgent ? Icons.local_fire_department : Icons.bookmark,
-            color: primaryColor),
-        title: Text(todo.title,
+    Color categoryColor;
+    switch (todo.category) {
+      case 'Pekerjaan':
+        categoryColor = accentColorPink;
+        break;
+      case 'Pribadi':
+        categoryColor = primaryColor.withOpacity(0.8);
+        break;
+      case 'Belanja':
+        categoryColor = accentColorOrange;
+        break;
+      default:
+        categoryColor = Colors.green.shade400;
+    }
+
+    return Dismissible(
+      key: ValueKey(todo.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Konfirmasi Hapus"),
+              content: const Text(
+                "Apakah Anda yakin ingin menghapus tugas ini?",
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Batal"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text("Hapus"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      onDismissed: (direction) {
+        deleteTodo(todo.id);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("${todo.title} dihapus")));
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        elevation: 1,
+        child: ListTile(
+          onTap: () => _showAddEditDialog(todo),
+          leading: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: categoryColor,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              todo.isUrgent ? Icons.local_fire_department : Icons.bookmark,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          title: Text(
+            todo.title,
             style: TextStyle(
-                decoration:
-                    todo.isCompleted ? TextDecoration.lineThrough : null)),
-        subtitle: Text(todo.category),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () => deleteTodo(todo.id)),
-            IconButton(
-              icon: Icon(
+              decoration: todo.isCompleted
+                  ? TextDecoration.lineThrough
+                  : TextDecoration.none,
+              fontWeight: FontWeight.bold,
+              color: todo.isCompleted ? Colors.grey : null,
+            ),
+          ),
+          subtitle: Row(
+            children: [
+              Text(
+                '${todo.category} ${todo.deadline != null ? ' | ${DateFormat('dd MMM').format(todo.deadline!)}' : ''}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(
                   todo.isCompleted ? Icons.check_circle : Icons.circle_outlined,
                   color: primaryColor),
               onPressed: () =>
@@ -351,59 +454,118 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            title: const Text(''),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            pinned: true,
-            actions: [
-              Tooltip(
+      body: Container(
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              title: const Text(''),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              pinned: true,
+              actions: [
+                // --- FITUR BARU: TOMBOL CLEAR CACHE  ---
+                Tooltip(
                   message: "Clear Cache",
                   child: IconButton(
-                      icon: const Icon(Icons.cleaning_services,
-                          color: Colors.orange),
-                      onPressed: _clearCache)),
-              // FITUR 3: Navigasi ke Halaman Profil
-              IconButton(
-                icon: const Icon(Icons.person, color: Colors.blue),
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const ProfileScreen()));
-                },
-              ),
-              IconButton(
-                icon: Icon(themeNotifier.value == ThemeMode.dark
-                    ? Icons.light_mode
-                    : Icons.dark_mode),
-                onPressed: () async {
-                  final prefs = await SharedPreferences.getInstance();
-                  themeNotifier.value = themeNotifier.value == ThemeMode.dark
-                      ? ThemeMode.light
-                      : ThemeMode.dark;
-                  await prefs.setBool(
-                      'is_dark_mode', themeNotifier.value == ThemeMode.dark);
-                },
-              ),
-            ],
-          ),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              // BANNER
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(20),
-                height: 150,
-                decoration: BoxDecoration(
-                    color: bannerColor,
-                    borderRadius: BorderRadius.circular(16)),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Column(
+                    icon: const Icon(
+                      Icons.cleaning_services,
+                      color: Colors.orange,
+                    ),
+                    onPressed: _clearCache,
+                  ),
+                ),
+
+                // TEMA TOGGLE
+                IconButton(
+                  icon: Icon(
+                    themeNotifier.value == ThemeMode.dark
+                        ? Icons.light_mode
+                        : Icons.dark_mode,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.yellow
+                        : Colors.deepPurple,
+                  ),
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    final isCurrentlyDark =
+                        themeNotifier.value == ThemeMode.dark;
+                    final newMode = isCurrentlyDark
+                        ? ThemeMode.light
+                        : ThemeMode.dark;
+
+                    themeNotifier.value = newMode;
+                    await prefs.setBool('is_dark_mode', !isCurrentlyDark);
+                  },
+                ),
+                // LOGOUT
+                IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.red),
+                  onPressed: _logout,
+                ),
+              ],
+            ),
+            SliverList(
+              delegate: SliverChildListDelegate([
+                _buildBanner(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 15.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Halo, $_username!',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          // Tombol Reload manual
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: _refreshTodos,
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Siap menghadapi hari ini?',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                      ),
+
+                      const SizedBox(height: 5),
+                      // --- FITUR BARU: TAMPILAN TIMESTAMP  ---
+                      Text(
+                        _lastRefreshTime == null
+                            ? 'Belum ada data'
+                            : 'Terakhir refresh: ${DateFormat('HH:mm:ss').format(_lastRefreshTime!)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).primaryColor,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+
+                      const SizedBox(height: 15),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 5,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('PRIORITY HUB',
@@ -435,54 +597,60 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                         ),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Halo, $_username!',
-                            style: const TextStyle(
-                                fontSize: 28, fontWeight: FontWeight.bold)),
-                        IconButton(
-                            icon: const Icon(Icons.refresh),
-                            onPressed: _refreshTodos)
-                      ],
-                    ),
-                    Text(
-                        _lastRefreshTime == null
-                            ? 'Belum ada data'
-                            : 'Refreshed: ${DateFormat('HH:mm:ss').format(_lastRefreshTime!)}',
-                        style: const TextStyle(
-                            fontSize: 12, fontStyle: FontStyle.italic)),
-
-                    // Menampilkan Counter di Home (Optional, sebagai bukti reactive)
-                    Consumer<CounterProvider>(
-                      builder: (context, counter, child) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Text("Total Aktivitas User: ${counter.count}",
-                              style: const TextStyle(color: Colors.grey)),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 20),
-                    SingleChildScrollView(
+                      ),
+                      const SizedBox(height: 25),
+                      SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        child: Row(children: [
-                          _buildCategoryChip('Semua'),
-                          ...categories.map((c) => _buildCategoryChip(c))
-                        ])),
-                  ],
+                        child: Row(
+                          children: [
+                            _buildCategoryChip('Semua'),
+                            ...categories
+                                .map((cat) => _buildCategoryChip(cat))
+                                .toList(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Daftar Tugas ($selectedFilter)',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : filteredTodos.isEmpty
+                      ? Center(
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 20),
+                              const Icon(
+                                Icons.folder_open,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                              Text(
+                                _lastRefreshTime == null
+                                    ? "Cache Cleared"
+                                    : "Tidak ada tugas.",
+                              ),
+                            ],
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: filteredTodos.map((todo) {
+                            return _buildTodoItem(todo);
+                          }).toList(),
+                        ),
                 ),
               ),
 
@@ -508,12 +676,5 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
-  }
-
-  List<Todo> get filteredTodos {
-    List<Todo> list = selectedFilter == 'Semua'
-        ? todos
-        : todos.where((t) => t.category == selectedFilter).toList();
-    return list; // Sorting logic disederhanakan
   }
 }
