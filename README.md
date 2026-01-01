@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🧠 Priority Hub
 
 **Tema Aplikasi:** To-Do List  
@@ -165,3 +166,12 @@ Priority Hub menyimpan data pengguna melalui dua mekanisme utama:
 3. Buka aplikasi → SQLite + SharedPreferences → data & pengaturan siap digunakan
 
 © 2025 – Tim Priority Hub.
+=======
+<<<<<<< HEAD
+# todolistapp
+
+A new Flutter project.
+=======
+# pemrogramanmobille
+>>>>>>> 61cb956d96ae3446ebbed7da0f9a37f1d63616a5
+>>>>>>> f1d179de53172ff25dc43c0096a8b21dae696304

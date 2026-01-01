@@ -4,11 +4,16 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
+<<<<<<< HEAD
   sdk: '>=3.0.0 <4.0.0'
+=======
+  sdk: ^3.9.2
+>>>>>>> f1d179de53172ff25dc43c0096a8b21dae696304
 
 dependencies:
   flutter:
     sdk: flutter
+<<<<<<< HEAD
   
   intl: ^0.18.0
   sqflite: ^2.3.0
@@ -16,11 +21,25 @@ dependencies:
   shared_preferences: ^2.2.0
   
   cupertino_icons: ^1.0.6
+=======
+
+  cupertino_icons: ^1.0.6
+  intl: ^0.18.1
+  get: ^4.6.6
+  shared_preferences: ^2.2.15
+>>>>>>> f1d179de53172ff25dc43c0096a8b21dae696304
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+<<<<<<< HEAD
   flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
+=======
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+>>>>>>> f1d179de53172ff25dc43c0096a8b21dae696304
