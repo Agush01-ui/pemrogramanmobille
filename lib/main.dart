@@ -78,6 +78,8 @@ class _MyAppState extends State<MyApp> {
                   fontWeight: FontWeight.bold),
             ),
           ),
+
+          // Konfigurasi Tema Gelap
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: Colors.deepPurple,

@@ -5,10 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart'; // Import Provider
 import 'todo_model.dart';
 import 'database_helper.dart';
+import 'login_screen.dart';
 import 'main.dart';
-import 'profile_screen.dart'; // Import Profile Screen
-import 'counter_provider.dart'; // Import Counter
-import 'stream_service.dart'; // Import Stream Service
 
 const Color primaryColor = Color(0xFF9F7AEA);
 const Color accentColorOrange = Color(0xFFFF9800);
@@ -64,6 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // --- LOGIKA DATA & DB ---
+
   Future<void> _initData() async {
     await _loadUsername();
     await _refreshTodos();
@@ -76,8 +76,20 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', false);
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
+  }
+
   Future<void> _refreshTodos() async {
     setState(() => isLoading = true);
+
     final data = await DatabaseHelper.instance.readTodosByUser(_username);
     if (mounted) {
       setState(() {
@@ -121,6 +133,38 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> deleteTodo(String id) async {
     await DatabaseHelper.instance.delete(id);
     _refreshTodos();
+  }
+
+  void _showCompletionAppreciation() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text(
+          '🎉 SELAMAT! Semua Tugas Selesai! 🎉',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: accentColorPink,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  List<Todo> get filteredTodos {
+    List<Todo> listToFilter = selectedFilter == 'Semua'
+        ? todos
+        : todos.where((todo) => todo.category == selectedFilter).toList();
+
+    return List.from(listToFilter)
+      ..sort((a, b) {
+        if (a.isUrgent && !b.isUrgent) return -1;
+        if (!a.isUrgent && b.isUrgent) return 1;
+        if (!a.isCompleted && b.isCompleted) return -1;
+        if (a.isCompleted && !b.isCompleted) return 1;
+        if (a.deadline != null && b.deadline != null) {
+          return a.deadline!.compareTo(b.deadline!);
+        }
+        return 0;
+      });
   }
 
   Future<void> _showAddEditDialog([Todo? todo]) async {
@@ -206,21 +250,35 @@ class _HomeScreenState extends State<HomeScreen> {
                       foregroundColor: Colors.white),
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
-                      if (isEditing) {
-                        todo.title = title;
-                        todo.category = category;
-                        todo.deadline = deadline;
-                        todo.isUrgent = isUrgent;
-                        await DatabaseHelper.instance.update(todo);
-                      } else {
-                        await DatabaseHelper.instance.create(Todo(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          title: title,
-                          category: category,
-                          deadline: deadline,
-                          isUrgent: isUrgent,
-                          username: _username,
-                        ));
+                      try {
+                        if (isEditing) {
+                          todo!.title = title;
+                          todo.category = category;
+                          todo.deadline = deadline;
+                          todo.isUrgent = isUrgent;
+                          // Username tidak diubah saat edit
+                          await DatabaseHelper.instance.update(todo);
+                        } else {
+                          final newTodo = Todo(
+                            id: DateTime.now()
+                                .millisecondsSinceEpoch
+                                .toString(),
+                            title: title,
+                            category: category,
+                            deadline: deadline,
+                            isUrgent: isUrgent,
+                            isCompleted: false,
+                            username: _username, // WAJIB DIISI
+                          );
+                          await DatabaseHelper.instance.create(newTodo);
+                        }
+                        await _refreshTodos();
+                        if (mounted) Navigator.of(context).pop();
+                      } catch (e) {
+                        print("Error saving: $e");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Gagal menyimpan: $e")),
+                        );
                       }
                       _refreshTodos();
                       if (mounted) Navigator.pop(context);
