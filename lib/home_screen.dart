@@ -1,23 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'dart:async';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:provider/provider.dart'; // Import Provider
-import 'todo_model.dart';
+
 import 'database_helper.dart';
+import 'todo_model.dart';
 import 'login_screen.dart';
-import 'main.dart';
+import 'counter_provider.dart';
+import 'stream_service.dart';
 
-import 'main.dart';
-import 'profile_screen.dart'; // Import Profile Screen
-import 'counter_provider.dart'; // Import Counter
-import 'stream_service.dart'; // Import Stream Service
-
+// ================= CONSTANT COLOR =================
 const Color primaryColor = Color(0xFF9F7AEA);
 const Color accentColorOrange = Color(0xFFFF9800);
 const Color accentColorPink = Color(0xFFF48FB1);
-const Color bannerColor = Color(0xFF3B417A);
 
+// ================= HOME SCREEN =================
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -26,10 +24,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Color _animatedColor = accentColorOrange;
-  double _animatedSize = 50.0;
-  Timer? _animTimer;
-
   String _username = 'Pengguna';
   List<Todo> todos = [];
   bool isLoading = false;
@@ -48,27 +42,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initData();
-
-    _animTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) {
-        setState(() {
-          _animatedColor = _animatedColor == accentColorOrange
-              ? accentColorPink
-              : accentColorOrange;
-          _animatedSize = _animatedSize == 50.0 ? 60.0 : 50.0;
-        });
-      }
-    });
   }
 
-  @override
-  void dispose() {
-    _animTimer?.cancel();
-    super.dispose();
-  }
-
-  // --- LOGIKA DATA & DB ---
-
+  // ================= INIT =================
   Future<void> _initData() async {
     await _loadUsername();
     await _refreshTodos();
@@ -81,42 +57,38 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
+  // ================= AUTH =================
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', false);
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    }
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
+  // ================= DATA =================
   Future<void> _refreshTodos() async {
     setState(() => isLoading = true);
 
-
-  Future<void> _refreshTodos() async {
-    setState(() => isLoading = true);
     final data = await DatabaseHelper.instance.readTodosByUser(_username);
-    if (mounted) {
-      setState(() {
-        todos = data;
-        isLoading = false;
-        _lastRefreshTime = DateTime.now();
-      });
 
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Data from Cache (Local DB)"),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    if (!mounted) return;
+
+    setState(() {
+      todos = data;
+      isLoading = false;
+      _lastRefreshTime = DateTime.now();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Data from Cache (Local DB)"),
+        duration: Duration(seconds: 1),
+      ),
+    );
   }
 
   void _clearCache() {
@@ -124,18 +96,21 @@ class _HomeScreenState extends State<HomeScreen> {
       todos.clear();
       _lastRefreshTime = null;
     });
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Cache Cleared!")));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Cache Cleared")),
+    );
   }
 
-  Future<void> toggleTodoStatus(
-      String id, bool currentStatus, Todo todo) async {
-    todo.isCompleted = !currentStatus;
+  // ================= TODO LOGIC =================
+  Future<void> toggleTodoStatus(Todo todo) async {
+    todo.isCompleted = !todo.isCompleted;
     await DatabaseHelper.instance.update(todo);
-    // Contoh penggunaan Provider: Increment counter setiap kali tugas selesai
+
     if (todo.isCompleted) {
       context.read<CounterProvider>().increment();
     }
+
     _refreshTodos();
   }
 
@@ -144,39 +119,28 @@ class _HomeScreenState extends State<HomeScreen> {
     _refreshTodos();
   }
 
-
-  void _showCompletionAppreciation() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          '🎉 SELAMAT! Semua Tugas Selesai! 🎉',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: accentColorPink,
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   List<Todo> get filteredTodos {
-    List<Todo> listToFilter = selectedFilter == 'Semua'
+    final list = selectedFilter == 'Semua'
         ? todos
-        : todos.where((todo) => todo.category == selectedFilter).toList();
+        : todos.where((t) => t.category == selectedFilter).toList();
 
-    return List.from(listToFilter)
-      ..sort((a, b) {
-        if (a.isUrgent && !b.isUrgent) return -1;
-        if (!a.isUrgent && b.isUrgent) return 1;
-        if (!a.isCompleted && b.isCompleted) return -1;
-        if (a.isCompleted && !b.isCompleted) return 1;
-        if (a.deadline != null && b.deadline != null) {
-          return a.deadline!.compareTo(b.deadline!);
-        }
-        return 0;
-      });
+    list.sort((a, b) {
+      if (a.isUrgent != b.isUrgent) {
+        return a.isUrgent ? -1 : 1;
+      }
+      if (a.isCompleted != b.isCompleted) {
+        return a.isCompleted ? 1 : -1;
+      }
+      if (a.deadline != null && b.deadline != null) {
+        return a.deadline!.compareTo(b.deadline!);
+      }
+      return 0;
+    });
+
+    return list;
   }
 
+  // ================= ADD / EDIT =================
   Future<void> _showAddEditDialog([Todo? todo]) async {
     final isEditing = todo != null;
     String title = todo?.title ?? '';
@@ -187,128 +151,94 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (_) {
         return StatefulBuilder(
           builder: (context, setStateSB) {
             return AlertDialog(
-              title: Text(isEditing ? 'Edit Tugas' : 'Tambah Tugas Baru'),
-              content: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      TextFormField(
-                        initialValue: title,
-                        decoration:
-                            const InputDecoration(labelText: 'Nama Tugas'),
-                        onChanged: (value) => title = value,
-                        validator: (value) =>
-                            value!.isEmpty ? 'Tidak boleh kosong' : null,
-                      ),
-                      const SizedBox(height: 15),
-                      DropdownButtonFormField<String>(
-                        initialValue: category,
-                        decoration:
-                            const InputDecoration(labelText: 'Kategori'),
-                        items: categories
-                            .map((v) =>
-                                DropdownMenuItem(value: v, child: Text(v)))
-                            .toList(),
-                        onChanged: (v) => setStateSB(() => category = v!),
-                      ),
-                      const SizedBox(height: 15),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(deadline == null
-                              ? 'Deadline: -'
-                              : DateFormat('dd/MM').format(deadline!)),
-                          TextButton(
-                            child: const Text('Pilih Tanggal'),
-                            onPressed: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: DateTime.now(),
-                                firstDate: DateTime.now(),
-                                lastDate: DateTime(2100),
-                              );
-                              if (picked != null) {
-                                setStateSB(() => deadline = picked);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                      SwitchListTile(
-                        title: const Text('Urgent?'),
-                        value: isUrgent,
-                        activeThumbColor: primaryColor,
-                        onChanged: (v) => setStateSB(() => isUrgent = v),
-                      )
-                    ],
-                  ),
+              title: Text(isEditing ? 'Edit Tugas' : 'Tambah Tugas'),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      initialValue: title,
+                      decoration:
+                          const InputDecoration(labelText: 'Nama Tugas'),
+                      validator: (v) =>
+                          v!.isEmpty ? 'Tidak boleh kosong' : null,
+                      onChanged: (v) => title = v,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField(
+                      value: category,
+                      items: categories
+                          .map(
+                              (c) => DropdownMenuItem(value: c, child: Text(c)))
+                          .toList(),
+                      onChanged: (v) => setStateSB(() => category = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(deadline == null
+                            ? 'Deadline: -'
+                            : DateFormat('dd/MM').format(deadline!)),
+                        TextButton(
+                          child: const Text('Pilih'),
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2100),
+                            );
+                            if (picked != null) {
+                              setStateSB(() => deadline = picked);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    SwitchListTile(
+                      title: const Text('Urgent'),
+                      value: isUrgent,
+                      onChanged: (v) => setStateSB(() => isUrgent = v),
+                    )
+                  ],
                 ),
               ),
-              actions: <Widget>[
+              actions: [
                 TextButton(
-                    child: const Text('Batal'),
-                    onPressed: () => Navigator.pop(context)),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Batal')),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white),
                   onPressed: () async {
-                    if (formKey.currentState!.validate()) {
+                    if (!formKey.currentState!.validate()) return;
 
-                      try {
-                        if (isEditing) {
-                          todo!.title = title;
-                          todo.category = category;
-                          todo.deadline = deadline;
-                          todo.isUrgent = isUrgent;
-                          // Username tidak diubah saat edit
-                          await DatabaseHelper.instance.update(todo);
-                        } else {
-                          final newTodo = Todo(
-                            id: DateTime.now()
-                                .millisecondsSinceEpoch
-                                .toString(),
-                            title: title,
-                            category: category,
-                            deadline: deadline,
-                            isUrgent: isUrgent,
-                            isCompleted: false,
-                            username: _username, // WAJIB DIISI
-                          );
-                          await DatabaseHelper.instance.create(newTodo);
-                        }
-                        await _refreshTodos();
-                        if (mounted) Navigator.of(context).pop();
-                      } catch (e) {
-                        print("Error saving: $e");
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Gagal menyimpan: $e")),
-                        );
-                      if (isEditing) {
-                        todo.title = title;
-                        todo.category = category;
-                        todo.deadline = deadline;
-                        todo.isUrgent = isUrgent;
-                        await DatabaseHelper.instance.update(todo);
-                      } else {
-                        await DatabaseHelper.instance.create(Todo(
+                    if (isEditing) {
+                      todo!
+                        ..title = title
+                        ..category = category
+                        ..deadline = deadline
+                        ..isUrgent = isUrgent;
+                      await DatabaseHelper.instance.update(todo);
+                    } else {
+                      await DatabaseHelper.instance.create(
+                        Todo(
                           id: DateTime.now().millisecondsSinceEpoch.toString(),
                           title: title,
                           category: category,
                           deadline: deadline,
                           isUrgent: isUrgent,
+                          isCompleted: false,
                           username: _username,
-                        ));
-                      }
-                      _refreshTodos();
-                      if (mounted) Navigator.pop(context);
+                        ),
+                      );
                     }
+                    _refreshTodos();
+                    if (mounted) Navigator.pop(context);
                   },
                   child: const Text('Simpan'),
                 ),
@@ -320,226 +250,88 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // WIDGET HELPERS
-  Widget _buildCategoryChip(String category) {
-    final isSelected = selectedFilter == category;
-    return GestureDetector(
-      onTap: () => setState(() => selectedFilter = category),
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? primaryColor : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(category,
-            style:
-                TextStyle(color: isSelected ? Colors.white : Colors.black87)),
-      ),
-    );
-  }
-
+  // ================= UI =================
   Widget _buildTodoItem(Todo todo) {
     return Card(
       child: ListTile(
         leading: Icon(
-            todo.isUrgent ? Icons.local_fire_department : Icons.bookmark,
-            color: primaryColor),
-        title: Text(todo.title,
-            style: TextStyle(
-                decoration:
-                    todo.isCompleted ? TextDecoration.lineThrough : null)),
-        subtitle: Text(todo.category),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () => deleteTodo(todo.id)),
-            IconButton(
-              icon: Icon(
-                  todo.isCompleted ? Icons.check_circle : Icons.circle_outlined,
-                  color: primaryColor),
-              onPressed: () =>
-                  toggleTodoStatus(todo.id, todo.isCompleted, todo),
-            ),
-          ],
+          todo.isUrgent ? Icons.local_fire_department : Icons.task,
+          color: primaryColor,
+        ),
+        title: Text(
+          todo.title,
+          style: TextStyle(
+            decoration: todo.isCompleted ? TextDecoration.lineThrough : null,
+          ),
+        ),
+        subtitle: Text(todo.deadline == null
+            ? todo.category
+            : '${todo.category} | ${DateFormat('dd MMM').format(todo.deadline!)}'),
+        trailing: IconButton(
+          icon: Icon(
+            todo.isCompleted ? Icons.check_circle : Icons.circle_outlined,
+            color: primaryColor,
+          ),
+          onPressed: () => toggleTodoStatus(todo),
         ),
         onTap: () => _showAddEditDialog(todo),
       ),
     );
   }
 
+  // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
-    // Membaca state counter tanpa rebuild seluruh halaman (hanya untuk log)
-    // context.read<CounterProvider>().count;
-
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            title: const Text(''),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            pinned: true,
-            actions: [
-              Tooltip(
-                  message: "Clear Cache",
-                  child: IconButton(
-                      icon: const Icon(Icons.cleaning_services,
-                          color: Colors.orange),
-                      onPressed: _clearCache)),
-              // FITUR 3: Navigasi ke Halaman Profil
-              IconButton(
-                icon: const Icon(Icons.person, color: Colors.blue),
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const ProfileScreen()));
-                },
-              ),
-              IconButton(
-                icon: Icon(themeNotifier.value == ThemeMode.dark
-                    ? Icons.light_mode
-                    : Icons.dark_mode),
-                onPressed: () async {
-                  final prefs = await SharedPreferences.getInstance();
-                  themeNotifier.value = themeNotifier.value == ThemeMode.dark
-                      ? ThemeMode.light
-                      : ThemeMode.dark;
-                  await prefs.setBool(
-                      'is_dark_mode', themeNotifier.value == ThemeMode.dark);
-                },
-              ),
-            ],
+      appBar: AppBar(
+        title: Text('Halo, $_username'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.cleaning_services),
+            onPressed: _clearCache,
           ),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              // BANNER
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(20),
-                height: 150,
-                decoration: BoxDecoration(
-                    color: bannerColor,
-                    borderRadius: BorderRadius.circular(16)),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('PRIORITY HUB',
-                                style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                    color: accentColorOrange)),
-                            Text('Atur tugas Anda.',
-                                style: TextStyle(color: Colors.white)),
-                          ]),
-                    ),
-                    // FITUR 4: Broadcast Stream Listener (Listener ke-1)
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text("Sesi:",
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 10)),
-                        StreamBuilder<int>(
-                          stream: SessionTimerService().timerStream,
-                          initialData: 0,
-                          builder: (context, snapshot) {
-                            return Text(
-                              "${snapshot.data}",
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold),
-                            );
-                          },
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Halo, $_username!',
-                            style: const TextStyle(
-                                fontSize: 28, fontWeight: FontWeight.bold)),
-                        IconButton(
-                            icon: const Icon(Icons.refresh),
-                            onPressed: _refreshTodos)
-                      ],
-                    ),
-                    Text(
-                        _lastRefreshTime == null
-                            ? 'Belum ada data'
-                            : 'Refreshed: ${DateFormat('HH:mm:ss').format(_lastRefreshTime!)}',
-                        style: const TextStyle(
-                            fontSize: 12, fontStyle: FontStyle.italic)),
-
-                    // Menampilkan Counter di Home (Optional, sebagai bukti reactive)
-                    Consumer<CounterProvider>(
-                      builder: (context, counter, child) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Text("Total Aktivitas User: ${counter.count}",
-                              style: const TextStyle(color: Colors.grey)),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 20),
-                    SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(children: [
-                          _buildCategoryChip('Semua'),
-                          ...categories.map((c) => _buildCategoryChip(c))
-                        ])),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : todos.isEmpty
-                        ? const Center(child: Text("Tidak ada tugas."))
-                        : Column(
-                            children: filteredTodos
-                                .map((t) => _buildTodoItem(t))
-                                .toList()),
-              ),
-              const SizedBox(height: 80),
-            ]),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              _lastRefreshTime == null
+                  ? 'Belum ada data'
+                  : 'Terakhir refresh: ${DateFormat('HH:mm:ss').format(_lastRefreshTime!)}',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+          StreamBuilder<int>(
+            stream: SessionTimerService().timerStream,
+            initialData: 0,
+            builder: (_, snap) => Text(
+              'Sesi: ${snap.data}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filteredTodos.isEmpty
+                    ? const Center(child: Text('Tidak ada tugas'))
+                    : ListView(
+                        padding: const EdgeInsets.all(12),
+                        children: filteredTodos.map(_buildTodoItem).toList(),
+                      ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEditDialog(),
         backgroundColor: primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () => _showAddEditDialog(),
+        child: const Icon(Icons.add),
       ),
     );
-  }
-
-  List<Todo> get filteredTodos {
-    List<Todo> list = selectedFilter == 'Semua'
-        ? todos
-        : todos.where((t) => t.category == selectedFilter).toList();
-    return list; // Sorting logic disederhanakan
   }
 }

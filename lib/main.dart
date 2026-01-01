@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Import Provider
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'home_screen.dart';
 import 'login_screen.dart';
-import 'counter_provider.dart'; // Import Counter Provider
+import 'counter_provider.dart';
 
+// ================= THEME NOTIFIER =================
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() async {
@@ -15,7 +17,6 @@ void main() async {
   themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
 
   runApp(
-    // WRAP APLIKASI DENGAN PROVIDER
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CounterProvider()),
@@ -25,6 +26,7 @@ void main() async {
   );
 }
 
+// ================= APP ROOT =================
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -52,36 +54,41 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Loading awal cek login
     if (_isChecking) {
       return const MaterialApp(
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
-      builder: (context, currentMode, child) {
+      builder: (context, currentMode, _) {
         return MaterialApp(
           title: 'Aplikasi To-Do List',
           debugShowCheckedModeBanner: false,
+
+          // ================= LIGHT THEME =================
           theme: ThemeData(
             brightness: Brightness.light,
-            primarySwatch: Colors.blue,
+            primarySwatch: Colors.deepPurple,
             scaffoldBackgroundColor: const Color(0xFFF7F2FF),
             appBarTheme: const AppBarTheme(
               backgroundColor: Colors.white,
               elevation: 0,
               iconTheme: IconThemeData(color: Colors.black),
               titleTextStyle: TextStyle(
-                  color: Colors.black,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
+                color: Colors.black,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
 
-
-          // Konfigurasi Tema Gelap
-          byann
+          // ================= DARK THEME =================
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: Colors.deepPurple,
@@ -91,15 +98,20 @@ class _MyAppState extends State<MyApp> {
               elevation: 0,
               iconTheme: IconThemeData(color: Colors.white),
               titleTextStyle: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             cardColor: const Color(0xFF1E1E1E),
-            dialogTheme:
-                DialogThemeData(backgroundColor: const Color(0xFF2C2C2C)),
+            dialogTheme: const DialogTheme(
+              backgroundColor: Color(0xFF2C2C2C),
+            ),
           ),
+
           themeMode: currentMode,
+
+          // ================= ROUTING =================
           home: _isLoggedIn ? const HomeScreen() : const LoginScreen(),
         );
       },
