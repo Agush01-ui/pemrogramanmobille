@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+
 import '../providers/auth_provider.dart';
 import '../providers/todo_provider.dart';
+import '../providers/theme_provider.dart';
 import '../models/todo_model.dart';
 import '../widgets/todo_dialog.dart';
-
-const Color primaryColor = Color(0xFF9F7AEA);
-const Color accentOrange = Color(0xFFFF9800);
-const Color accentPink = Color(0xFFF48FB1);
-const Color bannerColor = Color(0xFF3B417A);
-const Color bgColor = Color(0xFFF7F2FF);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,18 +17,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String selectedCategory = 'Semua';
+
   final List<String> categories = [
     'Semua',
     'Pekerjaan',
     'Pribadi',
     'Belanja',
-    'Lainnya'
+    'Lainnya',
   ];
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final todoProvider = context.watch<TodoProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
 
     final username = auth.username ?? 'Pengguna';
 
@@ -46,47 +44,53 @@ class _HomeScreenState extends State<HomeScreen> {
     final done = todoProvider.todos.where((t) => t.completed).length;
     final progress = total == 0 ? 0.0 : done / total;
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = themeProvider.themeMode == ThemeMode.dark;
+
     return Scaffold(
-      backgroundColor: bgColor,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            pinned: true,
-            actions: [
-              IconButton(
-                  icon: const Icon(Icons.logout, color: Colors.red),
-                  onPressed: () => auth.logout()),
-            ],
+      appBar: AppBar(
+        title: const Text('Todo App'),
+        actions: [
+          /// 🌗 DARK MODE TOGGLE
+          IconButton(
+            icon: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+            onPressed: () {
+              themeProvider.toggleTheme(!isDark);
+            },
           ),
-          SliverList(
-              delegate: SliverChildListDelegate([
-            _buildBanner(username),
-            _buildHeader(username),
-            _buildProgress(done, total, progress),
-            _buildCategory(),
-            _buildTodoList(todos),
-            const SizedBox(height: 100),
-          ])),
+
+          /// 🔐 LOGOUT
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            onPressed: auth.logout,
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
         onPressed: () => showTodoDialog(context, username: username),
+        child: const Icon(Icons.add),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: 80),
+        children: [
+          _buildBanner(username, colorScheme),
+          _buildProgressCard(done, total, progress),
+          _buildCategoryChips(colorScheme),
+          const SizedBox(height: 8),
+          _buildTodoList(todos),
+        ],
       ),
     );
   }
 
-  Widget _buildBanner(String username) {
+  /// ===== BANNER =====
+  Widget _buildBanner(String username, ColorScheme colorScheme) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
-      height: 150,
       decoration: BoxDecoration(
-        color: bannerColor,
-        borderRadius: BorderRadius.circular(18),
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
@@ -94,79 +98,78 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Halo, $username 👋',
-                    style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
+                Text(
+                  'Halo, $username 👋',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Siap menghadapi hari ini?',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(
+                    color: colorScheme.onPrimaryContainer.withOpacity(0.8),
+                  ),
                 ),
               ],
             ),
           ),
-          Container(
-            width: 55,
-            height: 55,
-            decoration: const BoxDecoration(
-              color: accentPink,
-              shape: BoxShape.circle,
-            ),
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: colorScheme.primary,
             child: const Icon(Icons.check, color: Colors.white),
-          ),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildHeader(String username) {
+  /// ===== PROGRESS CARD =====
+  Widget _buildProgressCard(int done, int total, double progress) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Text(
-        'Daftar Tugas Kamu',
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$done / $total Tugas Selesai',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: progress),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildProgress(int done, int total, double progress) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('$done / $total Tugas Selesai',
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          LinearProgressIndicator(value: progress, color: primaryColor),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategory() {
+  /// ===== CATEGORY CHIPS =====
+  Widget _buildCategoryChips(ColorScheme colorScheme) {
     return SizedBox(
-      height: 40,
+      height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: categories.map((cat) {
-          final active = selectedCategory == cat;
-          return GestureDetector(
-            onTap: () => setState(() => selectedCategory = cat),
-            child: Container(
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: active ? primaryColor : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(20),
+          final selected = selectedCategory == cat;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(cat),
+              selected: selected,
+              selectedColor: colorScheme.primary,
+              labelStyle: TextStyle(
+                color: selected ? Colors.white : colorScheme.onSurface,
               ),
-              child: Text(cat,
-                  style: TextStyle(
-                      color: active ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.w500)),
+              onSelected: (_) {
+                setState(() => selectedCategory = cat);
+              },
             ),
           );
         }).toList(),
@@ -174,51 +177,57 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// ===== TODO LIST =====
   Widget _buildTodoList(List<Todo> todos) {
     if (todos.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.all(20),
-        child: Center(child: Text('Tidak ada tugas')),
+        padding: EdgeInsets.all(32),
+        child: Column(
+          children: [
+            Icon(Icons.inbox, size: 60, color: Colors.grey),
+            SizedBox(height: 12),
+            Text('Tidak ada tugas', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
       );
     }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        children: todos.map((todo) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 10),
-            child: ListTile(
-              onTap: () =>
-                  showTodoDialog(context, todo: todo, username: todo.username),
-              leading: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: todo.isUrgent ? accentPink : accentOrange,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(Icons.bookmark, color: Colors.white),
-              ),
-              title: Text(
-                todo.title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  decoration: todo.completed
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
-                ),
-              ),
-              subtitle: Text(
-                  '${todo.category} | ${DateFormat('dd MMM').format(todo.deadline)}'),
-              trailing: IconButton(
-                icon: Icon(
-                    todo.completed ? Icons.check_circle : Icons.circle_outlined,
-                    color: primaryColor),
-                onPressed: () =>
-                    context.read<TodoProvider>().toggleStatus(todo),
-              ),
-            ),
-          );
-        }).toList(),
+        children: todos.map(_buildTodoItem).toList(),
+      ),
+    );
+  }
+
+  /// ===== TODO ITEM =====
+  Widget _buildTodoItem(Todo todo) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        onTap: () =>
+            showTodoDialog(context, todo: todo, username: todo.username),
+        leading: CircleAvatar(
+          backgroundColor:
+              todo.isUrgent ? Colors.pinkAccent : Colors.orangeAccent,
+          child: const Icon(Icons.bookmark, color: Colors.white, size: 18),
+        ),
+        title: Text(
+          todo.title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            decoration: todo.completed ? TextDecoration.lineThrough : null,
+          ),
+        ),
+        subtitle: Text(
+          '${todo.category} • ${DateFormat('dd MMM').format(todo.deadline)}',
+        ),
+        trailing: IconButton(
+          icon: Icon(
+            todo.completed ? Icons.check_circle : Icons.radio_button_unchecked,
+          ),
+          onPressed: () => context.read<TodoProvider>().toggleStatus(todo),
+        ),
       ),
     );
   }
