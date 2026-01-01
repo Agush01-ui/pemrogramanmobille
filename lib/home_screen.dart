@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart'; // Import Provider
 import 'todo_model.dart';
 import 'database_helper.dart';
 import 'login_screen.dart';
-import 'main.dart'; // Diperlukan untuk akses themeNotifier
+import 'main.dart';
 
 const Color primaryColor = Color(0xFF9F7AEA);
 const Color accentColorOrange = Color(0xFFFF9800);
 const Color accentColorPink = Color(0xFFF48FB1);
-const Color backgroundColor = Color(0xFFF7F2FF);
 const Color bannerColor = Color(0xFF3B417A);
 
 class HomeScreen extends StatefulWidget {
@@ -23,11 +23,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Color _animatedColor = accentColorOrange;
   double _animatedSize = 50.0;
-  Timer? _timer;
+  Timer? _animTimer;
 
   String _username = 'Pengguna';
   List<Todo> todos = [];
   bool isLoading = false;
+  DateTime? _lastRefreshTime;
 
   // --- FITUR BARU: TIMESTAMP CACHE ---
   DateTime? _lastRefreshTime;
@@ -38,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'Pribadi',
     'Belanja',
     'Olahraga',
-    'Lainnya',
+    'Lainnya'
   ];
 
   @override
@@ -46,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _initData();
 
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _animTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) {
         setState(() {
           _animatedColor = _animatedColor == accentColorOrange
@@ -60,11 +61,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _animTimer?.cancel();
     super.dispose();
   }
 
   // --- LOGIKA DATA ---
+
+  Future<void> _initData() async {
+    await _loadUsername();
+    await _refreshTodos();
+  }
 
   Future<void> _initData() async {
     await _loadUsername();
@@ -140,14 +146,11 @@ class _HomeScreenState extends State<HomeScreen> {
   ) async {
     todo.isCompleted = !currentStatus;
     await DatabaseHelper.instance.update(todo);
-    _refreshTodos();
-
-    int totalTodos = todos.length;
-    int completedTodos = todos.where((t) => t.isCompleted).length;
-
-    if (totalTodos > 0 && completedTodos == totalTodos) {
-      _showCompletionAppreciation();
+    // Contoh penggunaan Provider: Increment counter setiap kali tugas selesai
+    if (todo.isCompleted) {
+      context.read<CounterProvider>().increment();
     }
+    _refreshTodos();
   }
 
   Future<void> deleteTodo(String id) async {
@@ -186,15 +189,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // --- DIALOG TAMBAH/EDIT ---
-
   Future<void> _showAddEditDialog([Todo? todo]) async {
     final isEditing = todo != null;
     String title = todo?.title ?? '';
     String category = todo?.category ?? categories.first;
     DateTime? deadline = todo?.deadline;
     bool isUrgent = todo?.isUrgent ?? false;
-
     final formKey = GlobalKey<FormState>();
 
     await showDialog(
@@ -209,7 +209,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   key: formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       TextFormField(
                         initialValue: title,
@@ -217,9 +216,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           labelText: 'Nama Tugas',
                         ),
                         onChanged: (value) => title = value,
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Tidak boleh kosong'
-                            : null,
+                        validator: (value) =>
+                            value!.isEmpty ? 'Tidak boleh kosong' : null,
                       ),
                       const SizedBox(height: 15),
                       DropdownButtonFormField<String>(
@@ -242,51 +240,43 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Deadline: ${deadline == null ? 'Tidak Ada' : DateFormat('dd/MM/yyyy').format(deadline!)}',
-                          ),
+                          Text(deadline == null
+                              ? 'Deadline: -'
+                              : DateFormat('dd/MM').format(deadline!)),
                           TextButton(
+                            child: const Text('Pilih Tanggal'),
                             onPressed: () async {
-                              final pickedDate = await showDatePicker(
+                              final picked = await showDatePicker(
                                 context: context,
-                                initialDate: deadline ?? DateTime.now(),
+                                initialDate: DateTime.now(),
                                 firstDate: DateTime.now(),
                                 lastDate: DateTime(2100),
                               );
-                              if (pickedDate != null)
-                                setStateSB(() => deadline = pickedDate);
+                              if (picked != null) {
+                                setStateSB(() => deadline = picked);
+                              }
                             },
-                            child: const Text('Pilih Tanggal'),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 15),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Prioritas Mendesak (Urgent)'),
-                          Switch(
-                            value: isUrgent,
-                            onChanged: (bool value) =>
-                                setStateSB(() => isUrgent = value),
-                            activeColor: primaryColor,
-                          ),
-                        ],
-                      ),
+                      SwitchListTile(
+                        title: const Text('Urgent?'),
+                        value: isUrgent,
+                        activeThumbColor: primaryColor,
+                        onChanged: (v) => setStateSB(() => isUrgent = v),
+                      )
                     ],
                   ),
                 ),
               ),
               actions: <Widget>[
                 TextButton(
-                  child: const Text('Batal'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
+                    child: const Text('Batal'),
+                    onPressed: () => Navigator.pop(context)),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white),
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
                       try {
@@ -295,6 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           todo.category = category;
                           todo.deadline = deadline;
                           todo.isUrgent = isUrgent;
+                          // Username tidak diubah saat edit
                           await DatabaseHelper.instance.update(todo);
                         } else {
                           final newTodo = Todo(
@@ -317,9 +308,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           SnackBar(content: Text("Gagal menyimpan: $e")),
                         );
                       }
+                      _refreshTodos();
+                      if (mounted) Navigator.pop(context);
                     }
                   },
-                  child: Text(isEditing ? 'Simpan Perubahan' : 'Simpan Tugas'),
+                  child: const Text('Simpan'),
                 ),
               ],
             );
@@ -329,16 +322,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGETS UI ---
-
+  // WIDGET HELPERS
   Widget _buildCategoryChip(String category) {
     final isSelected = selectedFilter == category;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedFilter = category;
-        });
-      },
+      onTap: () => setState(() => selectedFilter = category),
       child: Container(
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -346,13 +334,9 @@ class _HomeScreenState extends State<HomeScreen> {
           color: isSelected ? primaryColor : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          category,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        child: Text(category,
+            style:
+                TextStyle(color: isSelected ? Colors.white : Colors.black87)),
       ),
     );
   }
@@ -452,79 +436,21 @@ class _HomeScreenState extends State<HomeScreen> {
               IconButton(
                 icon: Icon(
                   todo.isCompleted ? Icons.check_circle : Icons.circle_outlined,
-                  color: todo.isCompleted ? primaryColor : Colors.grey,
-                ),
-                onPressed: () =>
-                    toggleTodoStatus(todo.id, todo.isCompleted, todo),
-              ),
-            ],
-          ),
+                  color: primaryColor),
+              onPressed: () =>
+                  toggleTodoStatus(todo.id, todo.isCompleted, todo),
+            ),
+          ],
         ),
+        onTap: () => _showAddEditDialog(todo),
       ),
     );
   }
-
-  Widget _buildBanner() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      height: 150,
-      decoration: BoxDecoration(
-        color: bannerColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'PRIORITY HUB',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: accentColorOrange,
-                  ),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  'Atur tugas Anda, raih produktivitas tertinggi.',
-                  style: TextStyle(fontSize: 14, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-          AnimatedContainer(
-            duration: const Duration(seconds: 1),
-            curve: Curves.easeInOut,
-            width: _animatedSize,
-            height: _animatedSize,
-            decoration: BoxDecoration(
-              color: _animatedColor,
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Center(
-              child: Icon(
-                Icons.check,
-                color: Colors.white,
-                size: _animatedSize * 0.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- MAIN UI BUILD ---
 
   @override
   Widget build(BuildContext context) {
-    int totalTodos = todos.length;
-    int completedTodos = todos.where((t) => t.isCompleted).length;
-    double progress = totalTodos == 0 ? 0 : completedTodos / totalTodos;
+    // Membaca state counter tanpa rebuild seluruh halaman (hanya untuk log)
+    // context.read<CounterProvider>().count;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -642,22 +568,34 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '$completedTodos/$totalTodos Tugas Selesai',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: primaryColor,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            LinearProgressIndicator(
-                              value: progress,
-                              backgroundColor: Colors.grey.shade300,
-                              color: primaryColor,
-                              minHeight: 8,
-                            ),
-                          ],
+                            Text('PRIORITY HUB',
+                                style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    color: accentColorOrange)),
+                            Text('Atur tugas Anda.',
+                                style: TextStyle(color: Colors.white)),
+                          ]),
+                    ),
+                    // FITUR 4: Broadcast Stream Listener (Listener ke-1)
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("Sesi:",
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 10)),
+                        StreamBuilder<int>(
+                          stream: SessionTimerService().timerStream,
+                          initialData: 0,
+                          builder: (context, snapshot) {
+                            return Text(
+                              "${snapshot.data}",
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 25),
@@ -714,11 +652,23 @@ class _HomeScreenState extends State<HomeScreen> {
                           }).toList(),
                         ),
                 ),
-                const SizedBox(height: 80),
-              ]),
-            ),
-          ],
-        ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : todos.isEmpty
+                        ? const Center(child: Text("Tidak ada tugas."))
+                        : Column(
+                            children: filteredTodos
+                                .map((t) => _buildTodoItem(t))
+                                .toList()),
+              ),
+              const SizedBox(height: 80),
+            ]),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
