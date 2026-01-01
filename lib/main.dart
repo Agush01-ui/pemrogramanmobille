@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Import Provider
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
+import 'counter_provider.dart'; // Import Counter Provider
 
-// Notifier global untuk Tema agar bisa diakses dari mana saja
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Muat preferensi tema terakhir dari SharedPreferences
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('is_dark_mode') ?? false;
   themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
 
-  runApp(const MyApp());
+  runApp(
+    // WRAP APLIKASI DENGAN PROVIDER
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CounterProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -50,15 +58,12 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
-    // 2. Gunakan ValueListenableBuilder untuk mendengarkan perubahan tema
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentMode, child) {
         return MaterialApp(
           title: 'Aplikasi To-Do List',
           debugShowCheckedModeBanner: false,
-
-          // Konfigurasi Tema Terang
           theme: ThemeData(
             brightness: Brightness.light,
             primarySwatch: Colors.blue,
@@ -68,14 +73,11 @@ class _MyAppState extends State<MyApp> {
               elevation: 0,
               iconTheme: IconThemeData(color: Colors.black),
               titleTextStyle: TextStyle(
-                color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+                  color: Colors.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
           ),
-
-          // Konfigurasi Tema Gelap (Fitur Wajib)
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: Colors.deepPurple,
@@ -85,18 +87,15 @@ class _MyAppState extends State<MyApp> {
               elevation: 0,
               iconTheme: IconThemeData(color: Colors.white),
               titleTextStyle: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
             cardColor: const Color(0xFF1E1E1E),
-            dialogBackgroundColor: const Color(0xFF2C2C2C),
+            dialogTheme:
+                DialogThemeData(backgroundColor: const Color(0xFF2C2C2C)),
           ),
-
-          // Mode Tema sesuai pilihan user
           themeMode: currentMode,
-
           home: _isLoggedIn ? const HomeScreen() : const LoginScreen(),
         );
       },
