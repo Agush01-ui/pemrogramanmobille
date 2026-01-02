@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- PERMISSION LOKASI (WAJIB) -->
+    <!-- 🌍 INTERNET (WAJIB GOOGLE MAPS) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- 📍 PERMISSION LOKASI -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
@@ -9,6 +12,11 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+
+        <!-- 🔑 GOOGLE MAPS API KEY (WAJIB) -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAi2Pezr6Qu2cfTsEb7ESgu8U7-VEO4f4I"/>
 
         <activity
             android:name=".MainActivity"
@@ -28,13 +36,11 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-
         </activity>
 
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
-
     </application>
 
     <queries>

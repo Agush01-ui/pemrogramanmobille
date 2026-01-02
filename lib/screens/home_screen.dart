@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'map_screen.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/todo_provider.dart';
@@ -51,7 +52,20 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Todo App'),
         actions: [
-          /// 🌗 DARK MODE TOGGLE
+          /// 🗺️ GOOGLE MAPS
+          IconButton(
+            icon: const Icon(Icons.map),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MapScreen(),
+                ),
+              );
+            },
+          ),
+
+          /// 🌗 DARK MODE
           IconButton(
             icon: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
             onPressed: () {

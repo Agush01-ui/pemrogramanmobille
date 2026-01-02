@@ -4,6 +4,11 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/todo_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/map_provider.dart';
+import 'providers/location_provider.dart';
+import 'services/location_service.dart';
+
+import 'screens/root_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'theme.dart';
@@ -21,7 +26,13 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => TodoProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()), // ✅ WAJIB
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(
+          create: (_) => MapProvider(
+            locationService: LocationService(),
+          ),
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, _) {
@@ -30,7 +41,7 @@ class MyApp extends StatelessWidget {
             title: 'Todo App',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: theme.themeMode, // 🔥 dari Provider
+            themeMode: theme.themeMode,
             home: const RootScreen(),
           );
         },
@@ -40,8 +51,7 @@ class MyApp extends StatelessWidget {
 }
 
 /// =======================================================
-/// RootScreen
-/// Auto redirect Login / Home
+/// ROOT SCREEN (WAJIB ADA)
 /// =======================================================
 class RootScreen extends StatelessWidget {
   const RootScreen({super.key});

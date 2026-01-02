@@ -1,27 +1,40 @@
 import 'package:flutter/material.dart';
-import '../services/location_service.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LocationProvider extends ChangeNotifier {
-  double? latitude;
-  double? longitude;
-  bool isLoading = false;
-  String? error;
+  Position? _position;
+  bool _isLoading = false;
 
-  Future<void> fetch() async {
-    isLoading = true;
-    error = null;
+  Position? get position => _position;
+  bool get isLoading => _isLoading;
+
+  Future<void> getCurrentLocation() async {
+    _isLoading = true;
     notifyListeners();
 
-    try {
-      final pos = await LocationService.getLocation();
-      latitude = pos.latitude;
-      longitude = pos.longitude;
-    } catch (e) {
-      error = e.toString();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      _isLoading = false;
+      notifyListeners();
+      return;
     }
 
-    isLoading = false;
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    _position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    _isLoading = false;
     notifyListeners();
   }
 }
