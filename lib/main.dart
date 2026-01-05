@@ -6,11 +6,11 @@ import 'providers/todo_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/map_provider.dart';
 import 'providers/location_provider.dart';
+import 'providers/weather_provider.dart';
+
 import 'services/location_service.dart';
 
 import 'screens/root_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
 import 'theme.dart';
 
 void main() {
@@ -28,6 +28,21 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TodoProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
+
+        /// 🌦️ WEATHER (LISTEN REALTIME LOCATION)
+        ChangeNotifierProvider(
+          create: (context) {
+            final weather = WeatherProvider();
+            final location = context.read<LocationProvider>();
+
+            /// ⬅️ INI KUNCI UTAMA
+            weather.listenLocation(location);
+
+            return weather;
+          },
+        ),
+
+        /// 🗺️ MAP
         ChangeNotifierProvider(
           create: (_) => MapProvider(
             locationService: LocationService(),
@@ -47,25 +62,5 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
-  }
-}
-
-/// =======================================================
-/// ROOT SCREEN (WAJIB ADA)
-/// =======================================================
-class RootScreen extends StatelessWidget {
-  const RootScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-
-    if (auth.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return auth.isLoggedIn ? const HomeScreen() : const LoginScreen();
   }
 }

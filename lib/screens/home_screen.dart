@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'map_screen.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/todo_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/location_provider.dart';
+import '../providers/weather_provider.dart';
+
 import '../models/todo_model.dart';
+import '../widgets/weather_card.dart';
+import '../screens/map_screen.dart';
 import '../widgets/todo_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +30,26 @@ class _HomeScreenState extends State<HomeScreen> {
     'Belanja',
     'Lainnya',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    /// 🔥 INIT SEKALI SAAT SCREEN DIBUKA
+    Future.microtask(() {
+      final location = context.read<LocationProvider>();
+      final weather = context.read<WeatherProvider>();
+
+      location.startLocationStream();
+
+      location.addListener(() {
+        final pos = location.position;
+        if (pos != null) {
+          weather.fetchWeather(pos.latitude, pos.longitude);
+        }
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,25 +76,21 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Todo App'),
         actions: [
-          /// 🗺️ GOOGLE MAPS
+          /// 🗺️ MAP
           IconButton(
             icon: const Icon(Icons.map),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const MapScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const MapScreen()),
               );
             },
           ),
 
-          /// 🌗 DARK MODE
+          /// 🌗 THEME
           IconButton(
             icon: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
-            onPressed: () {
-              themeProvider.toggleTheme(!isDark);
-            },
+            onPressed: () => themeProvider.toggleTheme(!isDark),
           ),
 
           /// 🔐 LOGOUT
@@ -88,6 +108,10 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.only(bottom: 80),
         children: [
           _buildBanner(username, colorScheme),
+
+          /// 🌦️ WEATHER (REALTIME + CACHE + ANIMASI)
+          const WeatherCard(),
+
           _buildProgressCard(done, total, progress),
           _buildCategoryChips(colorScheme),
           const SizedBox(height: 8),
@@ -97,7 +121,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// ===== BANNER =====
+  // ================== WIDGET HELPERS ==================
+
   Widget _buildBanner(String username, ColorScheme colorScheme) {
     return Container(
       margin: const EdgeInsets.all(16),
@@ -140,7 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// ===== PROGRESS CARD =====
   Widget _buildProgressCard(int done, int total, double progress) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -163,7 +187,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// ===== CATEGORY CHIPS =====
   Widget _buildCategoryChips(ColorScheme colorScheme) {
     return SizedBox(
       height: 44,
@@ -191,7 +214,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// ===== TODO LIST =====
   Widget _buildTodoList(List<Todo> todos) {
     if (todos.isEmpty) {
       return const Padding(
@@ -214,7 +236,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// ===== TODO ITEM =====
   Widget _buildTodoItem(Todo todo) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),

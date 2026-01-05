@@ -1,40 +1,47 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LocationProvider extends ChangeNotifier {
   Position? _position;
-  bool _isLoading = false;
+  StreamSubscription<Position>? _subscription;
+  bool _isLoading = true;
 
   Position? get position => _position;
   bool get isLoading => _isLoading;
 
-  Future<void> getCurrentLocation() async {
-    _isLoading = true;
-    notifyListeners();
-
+  /// ================= STREAM REALTIME =================
+  Future<void> startLocationStream() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _isLoading = false;
-      notifyListeners();
-      return;
-    }
+    if (!serviceEnabled) return;
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
 
-    if (permission == LocationPermission.deniedForever) {
+    _subscription?.cancel();
+
+    _subscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 50, // update tiap 50 meter
+      ),
+    ).listen((Position position) {
+      _position = position;
       _isLoading = false;
       notifyListeners();
-      return;
-    }
+    });
+  }
 
-    _position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
+  /// ================= ALIAS UNTUK MAP =================
+  Future<void> getCurrentLocation() async {
+    await startLocationStream();
+  }
 
-    _isLoading = false;
-    notifyListeners();
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }
