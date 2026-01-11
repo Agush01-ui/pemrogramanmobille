@@ -22,13 +22,11 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Animasi logo (scale up)
     _logoController =
         AnimationController(vsync: this, duration: const Duration(seconds: 2));
     _logoAnimation =
         CurvedAnimation(parent: _logoController, curve: Curves.elasticOut);
 
-    // Animasi teks (slide up)
     _textController =
         AnimationController(vsync: this, duration: const Duration(seconds: 2));
     _textAnimation = Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)

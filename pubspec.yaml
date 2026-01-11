@@ -1,45 +1,33 @@
-name: todolistapp
-description: "A new Flutter project."
+name: uastodo
+description: A new Flutter project.
+
 publish_to: 'none'
-version: 0.1.0
+
+version: 1.0.0+1
 
 environment:
-<<<<<<< HEAD
   sdk: '>=3.0.0 <4.0.0'
-=======
-  sdk: ^3.9.2
->>>>>>> f1d179de53172ff25dc43c0096a8b21dae696304
 
 dependencies:
   flutter:
     sdk: flutter
-<<<<<<< HEAD
   
-  intl: ^0.18.0
-  sqflite: ^2.3.0
-  path: ^1.8.3
-  shared_preferences: ^2.2.0
-  
-  cupertino_icons: ^1.0.6
-=======
-
-  cupertino_icons: ^1.0.6
-  intl: ^0.18.1
-  get: ^4.6.6
-  shared_preferences: ^2.2.15
->>>>>>> f1d179de53172ff25dc43c0096a8b21dae696304
+  flutter_map: ^5.0.0
+  latlong2: ^0.9.0
+  geolocator: ^11.0.1
+  geocoding: ^2.1.1
+  provider: ^6.1.1
+  shared_preferences: ^2.4.2
+  sqflite: ^2.4.2
+  path: ^1.9.1
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-<<<<<<< HEAD
-  flutter_lints: ^4.0.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
-=======
-  flutter_lints: ^5.0.0
 
-flutter:
-  uses-material-design: true
->>>>>>> f1d179de53172ff25dc43c0096a8b21dae696304
+# Hapus/comment flutter_typeahead untuk sementara

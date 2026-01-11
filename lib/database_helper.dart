@@ -10,7 +10,8 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('todos_app_v3.db'); // Versi DB baru
+    _database = await _initDB(
+        'todos_app_v4.db'); // TAMBAHAN: Versi database ditingkatkan
     return _database!;
   }
 
@@ -18,24 +19,25 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(path,
+        version: 2, onCreate: _createDB, onUpgrade: _upgradeDB);
   }
 
   Future _createDB(Database db, int version) async {
-    // 1. Tabel TODOS (Sekarang ada kolom username)
+    // TAMBAHAN: Tabel todos dengan kolom time
     await db.execute('''
     CREATE TABLE todos (
       id TEXT PRIMARY KEY,
       title TEXT,
       category TEXT,
       deadline TEXT,
+      time TEXT, -- TAMBAHAN: Kolom untuk waktu spesifik
       isUrgent INTEGER,
       isCompleted INTEGER,
-      username TEXT  -- <--- KOLOM BARU PENANDA PEMILIK
+      username TEXT
     )
     ''');
 
-    // 2. Tabel USERS
     await db.execute('''
     CREATE TABLE users (
       username TEXT PRIMARY KEY,
@@ -44,15 +46,21 @@ class DatabaseHelper {
     ''');
   }
 
+  // TAMBAHAN: Fungsi untuk upgrade database (menambah kolom time jika belum ada)
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Tambah kolom time ke tabel todos
+      await db.execute('ALTER TABLE todos ADD COLUMN time TEXT');
+    }
+  }
+
   Future<int> create(Todo todo) async {
     final db = await instance.database;
     return await db.insert('todos', todo.toMap());
   }
 
-  // --- FUNGSI PENTING: BACA DATA SPESIFIK USER ---
   Future<List<Todo>> readTodosByUser(String username) async {
     final db = await instance.database;
-    // Filter menggunakan WHERE username = ?
     final result = await db.query(
       'todos',
       where: 'username = ?',
@@ -80,7 +88,6 @@ class DatabaseHelper {
     );
   }
 
-  // --- USER FUNCTIONS ---
   Future<int> registerUser(String username, String password) async {
     final db = await instance.database;
     try {
