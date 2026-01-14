@@ -38,7 +38,6 @@ class _MapScreenState extends State<MapScreen>
     super.initState();
     _getCurrentLocation();
 
-    // Setup animation
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -270,8 +269,6 @@ class _MapScreenState extends State<MapScreen>
                   const SizedBox(width: 8),
                 ],
               ),
-
-              // Search results dropdown
               if (_isSearching)
                 const Padding(
                   padding: EdgeInsets.all(8),
@@ -281,7 +278,6 @@ class _MapScreenState extends State<MapScreen>
                     ),
                   ),
                 ),
-
               if (_searchResults.isNotEmpty)
                 Container(
                   constraints: const BoxConstraints(maxHeight: 200),
@@ -343,7 +339,7 @@ class _MapScreenState extends State<MapScreen>
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           fontSize: 14,
-                                          fontWeight: FontWeight.w500,
+                                          fontWeight: FontWeight.bold,
                                           color: isDarkMode
                                               ? Colors.white
                                               : Colors.black,
@@ -877,7 +873,9 @@ class _MapScreenState extends State<MapScreen>
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
@@ -893,14 +891,25 @@ class _MapScreenState extends State<MapScreen>
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
+                color: Colors.white,
               ),
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF3B417A),
-        foregroundColor: Colors.white,
-        centerTitle: false,
         elevation: 0,
+        // Tone gradiasi disesuaikan dengan HomeScreen (Ungu ke Biru Muda)
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF9F7AEA), // primaryColor
+                Color(0xFF667EEA), // bannerGradientEnd
+              ],
+            ),
+          ),
+        ),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             bottomLeft: Radius.circular(20),
@@ -915,16 +924,16 @@ class _MapScreenState extends State<MapScreen>
                 color: Colors.white.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.route, size: 20),
+              child: const Icon(Icons.route, size: 20, color: Colors.white),
             ),
             onPressed: _destinationLocation != null ? _calculateRoute : null,
             tooltip: 'Hitung Rute',
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Stack(
         children: [
-          // OpenStreetMap
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -937,15 +946,7 @@ class _MapScreenState extends State<MapScreen>
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.todolistapp',
-                tileBuilder: (context, tile, __) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: tile,
-                  );
-                },
               ),
-
-              // Polyline untuk rute
               if (_showRoute && _polylinePoints.isNotEmpty)
                 PolylineLayer(
                   polylines: [
@@ -960,8 +961,6 @@ class _MapScreenState extends State<MapScreen>
                     ),
                   ],
                 ),
-
-              // Marker untuk lokasi saat ini
               if (_currentLocation != null)
                 MarkerLayer(
                   markers: [
@@ -995,8 +994,6 @@ class _MapScreenState extends State<MapScreen>
                     ),
                   ],
                 ),
-
-              // Marker untuk tujuan
               if (_destinationLocation != null)
                 MarkerLayer(
                   markers: [
@@ -1032,8 +1029,6 @@ class _MapScreenState extends State<MapScreen>
                 ),
             ],
           ),
-
-          // Loading Overlay
           if (_isLoading)
             Center(
               child: Container(
@@ -1067,20 +1062,10 @@ class _MapScreenState extends State<MapScreen>
                 ),
               ),
             ),
-
-          // Search Bar
           _buildSearchBar(),
-
-          // Location Card
           _buildLocationCard(),
-
-          // Transport Selector
           _buildTransportSelector(),
-
-          // Route Info Card
           _buildRouteInfoCard(),
-
-          // Map Controls
           _buildMapControls(),
         ],
       ),
