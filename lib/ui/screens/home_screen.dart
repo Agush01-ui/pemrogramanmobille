@@ -514,6 +514,48 @@ class _HomeScreenState extends State<HomeScreen> {
     'Lainnya',
   ];
 
+  // ========== FUNGSI UNTUK MENDAPATKAN IKON BERDASARKAN KATEGORI ==========
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Pekerjaan':
+        return Icons.work_outline;
+      case 'Pribadi':
+        return Icons.person_outline;
+      case 'Belanja':
+        return Icons.shopping_cart_outlined;
+      case 'Olahraga':
+        return Icons.fitness_center_outlined;
+      case 'Lainnya':
+        return Icons.category_outlined;
+      default:
+        return Icons.category_outlined;
+    }
+  }
+
+  // ========== FUNGSI UNTUK MENDAPATKAN WARNA IKON BERDASARKAN KATEGORI ==========
+  Color _getCategoryIconColor(String category, bool isUrgent) {
+    // Jika urgent, gunakan warna oranye
+    if (isUrgent) {
+      return accentColorOrange;
+    }
+
+    // Jika tidak urgent, gunakan warna berdasarkan kategori
+    switch (category) {
+      case 'Pekerjaan':
+        return accentColorPink;
+      case 'Pribadi':
+        return primaryColor;
+      case 'Belanja':
+        return accentColorOrange;
+      case 'Olahraga':
+        return Colors.green;
+      case 'Lainnya':
+        return Colors.blue;
+      default:
+        return primaryColor;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1400,7 +1442,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             category: category,
                             deadline: deadline,
                             time: time,
-                            isUrgent: isUrgent,
+                            isUrgent: isUrgent, // <-- DIPERBAIKI
                             isCompleted: false,
                             username: _username,
                           );
@@ -1571,30 +1613,52 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategoryChip(String category) {
     final isSelected = selectedFilter == category;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedFilter = category;
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? primaryColor
-              : Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey.shade800
-                  : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          category,
-          style: TextStyle(
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: 120, // Batasi lebar maksimum
+      ),
+      margin: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedFilter = category;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
             color: isSelected
-                ? Colors.white
-                : Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.w500,
+                ? primaryColor
+                : Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.shade800
+                    : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _getCategoryIcon(category),
+                size: 16,
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  category,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isSelected
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1613,8 +1677,11 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'Belanja':
         categoryColor = accentColorOrange;
         break;
+      case 'Olahraga':
+        categoryColor = Colors.green;
+        break;
       default:
-        categoryColor = Colors.green.shade400;
+        categoryColor = Colors.blue;
     }
 
     return Dismissible(
@@ -1657,161 +1724,278 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
         elevation: 1,
         color: Theme.of(context).cardColor,
-        child: ListTile(
-          onTap: () => _showAddEditDialog(todo),
-          leading: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Bagian Kiri: Ikon kategori dengan ceklis status
               Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: categoryColor,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  todo.isUrgent ? Icons.local_fire_department : Icons.bookmark,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-              if (todo.time != null) ...[
-                const SizedBox(height: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    todo.hourDisplay,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          title: Text(
-            todo.title,
-            style: TextStyle(
-              decoration: todo.isCompleted
-                  ? TextDecoration.lineThrough
-                  : TextDecoration.none,
-              fontWeight: FontWeight.bold,
-              color: todo.isCompleted
-                  ? Colors.grey
-                  : Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                todo.category,
-                style: TextStyle(
-                  fontSize: 12,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  if (todo.time != null) ...[
-                    Row(
+                width: 40,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Stack(
                       children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 12,
-                          color: Colors.blue,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          todo.formattedTime,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w500,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: todo.isUrgent
+                                ? accentColorOrange.withOpacity(0.1)
+                                : _getCategoryIconColor(
+                                        todo.category, todo.isUrgent)
+                                    .withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: todo.isUrgent
+                                  ? accentColorOrange.withOpacity(0.3)
+                                  : _getCategoryIconColor(
+                                          todo.category, todo.isUrgent)
+                                      .withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Icon(
+                            _getCategoryIcon(todo.category),
+                            color: _getCategoryIconColor(
+                                todo.category, todo.isUrgent),
+                            size: 22,
                           ),
                         ),
+                        if (todo.isCompleted)
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: successColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.check,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
-                    const SizedBox(width: 8),
                   ],
-                  if (todo.deadline != null)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 12,
-                          color: Colors.green,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          DateFormat('dd MMM').format(todo.deadline!),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.green,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
+                ),
               ),
-            ],
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (todo.time != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.pink.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      todo.minuteDisplay,
+
+              const SizedBox(width: 10),
+
+              // Bagian Tengah: Informasi tugas
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Judul tugas
+                    Text(
+                      todo.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.pink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        decoration: todo.isCompleted
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                        color: todo.isCompleted
+                            ? Colors.grey
+                            : Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+
+                    // Baris informasi: Kategori, Urgent, Waktu, Deadline
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        // Badge Kategori
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: categoryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getCategoryIcon(todo.category),
+                                size: 12,
+                                color: categoryColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                todo.category,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: categoryColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Badge Urgent (jika ada)
+                        if (todo.isUrgent)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: accentColorOrange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.local_fire_department,
+                                  size: 12,
+                                  color: accentColorOrange,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Urgent',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: accentColorOrange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Badge Waktu (jika ada)
+                        if (todo.time != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.access_time,
+                                  size: 12,
+                                  color: Colors.blue,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  todo.formattedTime,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Badge Deadline (jika ada)
+                        if (todo.deadline != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 12,
+                                  color: Colors.green,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  DateFormat('dd MMM').format(todo.deadline!),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: () async {
-                  bool confirm = await _showDeleteConfirmationDialog(todo);
-                  if (confirm && mounted) {
-                    deleteTodo(todo.id);
-                  }
-                },
               ),
-              IconButton(
-                icon: Icon(
-                  todo.isCompleted ? Icons.check_circle : Icons.circle_outlined,
-                  color: todo.isCompleted
-                      ? primaryColor
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.6),
+
+              // Bagian Kanan: Tombol aksi vertikal
+              Container(
+                width: 50,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Tombol Edit (atas)
+                    IconButton(
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 20,
+                        color: Colors.blue,
+                      ),
+                      onPressed: () => _showAddEditDialog(todo),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Tombol Status (bawah)
+                    IconButton(
+                      icon: Icon(
+                        todo.isCompleted
+                            ? Icons.check_circle
+                            : Icons.circle_outlined,
+                        size: 24,
+                        color: todo.isCompleted
+                            ? successColor
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.5),
+                      ),
+                      onPressed: () =>
+                          toggleTodoStatus(todo.id, todo.isCompleted, todo),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                    ),
+                  ],
                 ),
-                onPressed: () =>
-                    toggleTodoStatus(todo.id, todo.isCompleted, todo),
               ),
             ],
           ),
