@@ -1,76 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'home_screen.dart';
-import 'register_screen.dart';
 import '../../database_helper.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isObscure = true;
 
+  // Variabel warna konsisten dengan LoginScreen
   final Color primaryPurple = const Color(0xFF9F7AEA);
   final Color deepPurple = const Color(0xFF3B417A);
 
-  void _login() async {
+  void _register() async {
     String user = _usernameController.text.trim();
     String pass = _passwordController.text.trim();
 
-    // Validasi Regex: Minimal 6 Karakter, ada Huruf Kapital, ada Angka
+    // Regex: Minimal 6 karakter, 1 Huruf Kapital, 1 Angka
     RegExp passwordRegExp = RegExp(r'^(?=.*[A-Z])(?=.*\d).{6,}$');
 
     if (user.isNotEmpty && pass.isNotEmpty) {
-      // 1. Validasi format sebelum cek database
+      // Validasi Keamanan Password
       if (!passwordRegExp.hasMatch(pass)) {
         _showSnackBar(
-            'Format password salah! Wajib 6 karakter, huruf kapital & angka.',
-            Colors.red);
+          'Password wajib isi dengan benar: Minimal 6 karakter, ada huruf kapital, dan angka!',
+          Colors.red,
+        );
         return;
       }
 
-      // 2. Cek ke database
-      bool isValid = await DatabaseHelper.instance.loginUser(user, pass);
+      // Simpan ke database
+      int result = await DatabaseHelper.instance.registerUser(user, pass);
 
-      if (isValid) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('is_logged_in', true);
-        await prefs.setString('last_username', user);
-        await prefs.setString('last_password', pass);
+      if (result != -1) {
+        _showSnackBar('Registrasi Berhasil! Silakan Login.', Colors.green);
 
+        // KODE YANG ANDA TANYAKAN diletakkan di sini:
         if (mounted) {
-          // Navigasi ke Home dengan Animasi Fade & Scale
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const HomeScreen(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale:
-                        Tween<double>(begin: 0.9, end: 1.0).animate(animation),
-                    child: child,
-                  ),
-                );
-              },
-              transitionDuration: const Duration(milliseconds: 500),
-            ),
-          );
+          // Memberikan delay sedikit agar user bisa melihat SnackBar sukses
+          Future.delayed(const Duration(seconds: 1), () {
+            Navigator.pop(context); // Kembali ke halaman login
+          });
         }
       } else {
-        _showSnackBar('Username atau Password salah!', Colors.red);
+        _showSnackBar('Username sudah digunakan!', Colors.red);
       }
     } else {
-      _showSnackBar('Harap isi Username dan Password', Colors.orange);
+      _showSnackBar(
+          'Harap isi Username dan Password untuk daftar', Colors.orange);
     }
   }
 
@@ -122,12 +104,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  child: Icon(Icons.lock_person_rounded,
+                  child: Icon(Icons.person_add_alt_1_rounded,
                       size: 60, color: primaryPurple),
                 ),
                 const SizedBox(height: 30),
                 Text(
-                  'PRIORITY HUB',
+                  'DAFTAR AKUN',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
@@ -137,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Selamat Datang Kembali!',
+                  'Silakan lakukan registrasi di sini',
                   style: TextStyle(
                     fontSize: 14,
                     color: deepPurple.withOpacity(0.6),
@@ -145,23 +127,50 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
+
                 _buildTextField(
                   controller: _usernameController,
-                  label: 'Username',
+                  label: 'Username Baru',
                   icon: Icons.person_outline_rounded,
                 ),
                 const SizedBox(height: 20),
+
                 _buildTextField(
                   controller: _passwordController,
-                  label: 'Password',
+                  label: 'Password Baru',
                   icon: Icons.lock_outline_rounded,
                   isPassword: true,
                 ),
+
+                // Hint UI
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0, top: 8.0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded,
+                            size: 14, color: deepPurple.withOpacity(0.6)),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            'Hint: Minimal 6 karakter, gunakan huruf kapital dan angka.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: deepPurple.withOpacity(0.7),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 35),
 
-                // Tombol MASUK
                 GestureDetector(
-                  onTap: _login,
+                  onTap: _register,
                   child: Container(
                     width: double.infinity,
                     height: 55,
@@ -180,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: const Center(
                       child: Text(
-                        'MASUK',
+                        'DAFTAR SEKARANG',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -193,35 +202,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Link ke Register dengan Animasi Slide
                 TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            const RegisterScreen(),
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                          const begin = Offset(1.0, 0.0); // Dari kanan
-                          const end = Offset.zero;
-                          const curve = Curves.easeInOutQuart;
-                          var tween = Tween(begin: begin, end: end)
-                              .chain(CurveTween(curve: curve));
-                          return SlideTransition(
-                              position: animation.drive(tween), child: child);
-                        },
-                        transitionDuration: const Duration(milliseconds: 600),
-                      ),
-                    );
-                  },
+                  onPressed: () => Navigator.pop(context),
                   child: RichText(
                     text: TextSpan(
-                      text: "Belum punya akun? ",
+                      text: "Sudah punya akun? ",
                       style: const TextStyle(color: Colors.grey),
                       children: [
                         TextSpan(
-                          text: "Daftar Sekarang",
+                          text: "Login di sini",
                           style: TextStyle(
                             color: primaryPurple,
                             fontWeight: FontWeight.bold,
