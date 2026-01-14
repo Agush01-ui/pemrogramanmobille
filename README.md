@@ -61,13 +61,3 @@ Struktur kode aplikasi dipisahkan dengan jelas untuk memudahkan *maintenance* (p
 *   **State Management Layer (Penghubung)**:
     *   Folder: `lib/providers/`
     *   Berisi: `WeatherProvider`. Bertugas memanggil Service, menyimpan data di memori, dan memberi tahu UI jika ada update.
-
----
-## Cara Menjalankan Aplikasi
-1.  Pastikan Flutter SDK sudah terinstall.
-2.  Jalankan perintah:
-    ```bash
-    flutter pub get
-    flutter run
-    ```
-3.  Berikan izin lokasi saat diminta oleh aplikasi untuk mengaktifkan fitur Cuaca Lokal.

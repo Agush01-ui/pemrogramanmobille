@@ -15,6 +15,9 @@ const Color accentColorOrange = Color(0xFFFF9800);
 const Color accentColorPink = Color(0xFFF48FB1);
 const Color backgroundColor = Color(0xFFF7F2FF);
 const Color bannerColor = Color(0xFF3B417A);
+const Color deepPurple = Color(0xFF3B417A);
+const Color successColor = Color(0xFF4CAF50);
+const Color warningColor = Color(0xFFFF9800);
 
 // TAMBAHAN: Widget TimePicker dengan tampilan jam besar
 class TimePickerWidget extends StatefulWidget {
@@ -282,6 +285,209 @@ class _TimePickerWidgetState extends State<TimePickerWidget> {
   }
 }
 
+// TAMBAHAN: Widget untuk grafik tugas
+class TaskChartWidget extends StatelessWidget {
+  final int completedTodos;
+  final int totalTodos;
+  final bool isDarkMode;
+
+  const TaskChartWidget({
+    Key? key,
+    required this.completedTodos,
+    required this.totalTodos,
+    required this.isDarkMode,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final double progress = totalTodos == 0 ? 0 : completedTodos / totalTodos;
+    final double remainingProgress = 1.0 - progress;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Statistik Penyelesaian Tugas',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.grey[800],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Grafik donat
+        SizedBox(
+          height: 150,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 150,
+                height: 150,
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 15,
+                  backgroundColor:
+                      isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                  valueColor: AlwaysStoppedAnimation<Color>(successColor),
+                ),
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${(progress * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.grey[800],
+                    ),
+                  ),
+                  Text(
+                    'Selesai',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Legend
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildLegendItem(
+              color: successColor,
+              label: 'Selesai ($completedTodos)',
+              isDarkMode: isDarkMode,
+            ),
+            _buildLegendItem(
+              color: warningColor,
+              label: 'Belum Selesai (${totalTodos - completedTodos})',
+              isDarkMode: isDarkMode,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Statistik detail
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? Colors.grey[800]!.withOpacity(0.3)
+                : Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              _buildStatRow(
+                label: 'Total Tugas',
+                value: totalTodos.toString(),
+                icon: Icons.list_alt,
+                isDarkMode: isDarkMode,
+              ),
+              const SizedBox(height: 8),
+              _buildStatRow(
+                label: 'Tugas Selesai',
+                value: completedTodos.toString(),
+                icon: Icons.check_circle,
+                color: successColor,
+                isDarkMode: isDarkMode,
+              ),
+              const SizedBox(height: 8),
+              _buildStatRow(
+                label: 'Tugas Belum Selesai',
+                value: (totalTodos - completedTodos).toString(),
+                icon: Icons.pending,
+                color: warningColor,
+                isDarkMode: isDarkMode,
+              ),
+              const SizedBox(height: 8),
+              _buildStatRow(
+                label: 'Persentase',
+                value: '${(progress * 100).toStringAsFixed(1)}%',
+                icon: Icons.trending_up,
+                color: primaryColor,
+                isDarkMode: isDarkMode,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem({
+    required Color color,
+    required String label,
+    required bool isDarkMode,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatRow({
+    required String label,
+    required String value,
+    required IconData icon,
+    Color? color,
+    required bool isDarkMode,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: color ?? (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: color ?? (isDarkMode ? Colors.white : Colors.grey[800]),
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -295,6 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer;
 
   String _username = 'Pengguna';
+  String _password = ''; // TAMBAHAN: Untuk menyimpan password
   List<Todo> todos = [];
   bool isLoading = false;
 
@@ -331,6 +538,592 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  // ========== FUNGSI KONFIRMASI LOGOUT (DIPERBARUI) ==========
+  Future<void> _showLogoutConfirmation(BuildContext context) async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon dengan gradient seperti banner
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [primaryColor, Color(0xFF667EEA)],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.exit_to_app,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Judul
+                Text(
+                  'Logout dari Akun',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : deepPurple,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Pesan
+                Text(
+                  'Apakah Anda yakin ingin keluar dari akun $_username?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Tombol Aksi
+                Row(
+                  children: [
+                    // Tombol Batal
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(
+                            color: isDarkMode
+                                ? Colors.grey[700]!
+                                : Colors.grey[300]!,
+                          ),
+                          backgroundColor: Colors.transparent,
+                        ),
+                        child: Text(
+                          'Batal',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode
+                                ? Colors.grey[300]
+                                : Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Tombol Logout dengan gradient
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [primaryColor, Color(0xFF667EEA)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.exit_to_app,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Logout',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ).then((confirm) {
+      if (confirm == true) {
+        _logout();
+      }
+    });
+  }
+
+  // Fungsi Dialog Profil yang DITINGKATKAN
+  void _showProfileDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPassword = prefs.getString('last_password') ?? '';
+
+    final int totalTodos = todos.length;
+    final int completedTodos = todos.where((t) => t.isCompleted).length;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+        child: SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const SizedBox(width: 40),
+                    Text(
+                      'Detail Profil',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.grey[800],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Avatar dan Nama
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: primaryColor.withOpacity(0.1),
+                  child: Icon(
+                    Icons.person,
+                    size: 60,
+                    color: primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _username,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.grey[800],
+                  ),
+                ),
+                Text(
+                  'Pengguna Priority Hub',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Informasi Akun
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.grey[800] : Colors.grey[50],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Informasi Akun',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.white : Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Username
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.person_outline,
+                            color: primaryColor,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          'Username',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[600],
+                          ),
+                        ),
+                        subtitle: Text(
+                          _username,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: isDarkMode ? Colors.white : Colors.grey[800],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Password
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.lock_outline,
+                            color: Colors.green,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          'Password Login',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[600],
+                          ),
+                        ),
+                        subtitle: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '•' * 12,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : Colors.grey[800],
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.visibility_outlined,
+                                size: 18,
+                                color: isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                              ),
+                              onPressed: () {
+                                _showPasswordDialog(savedPassword, isDarkMode);
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Tanggal Bergabung
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.calendar_today_outlined,
+                            color: Colors.blue,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          'Bergabung Sejak',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[600],
+                          ),
+                        ),
+                        subtitle: Text(
+                          DateFormat('dd MMMM yyyy').format(DateTime.now()),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: isDarkMode ? Colors.white : Colors.grey[800],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Grafik Tugas
+                TaskChartWidget(
+                  completedTodos: completedTodos,
+                  totalTodos: totalTodos,
+                  isDarkMode: isDarkMode,
+                ),
+                const SizedBox(height: 32),
+
+                // Tombol Aksi
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(
+                            color: isDarkMode
+                                ? Colors.grey[700]!
+                                : Colors.grey[300]!,
+                          ),
+                        ),
+                        child: Text(
+                          'Tutup',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: isDarkMode
+                                ? Colors.grey[300]
+                                : Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [primaryColor, Color(0xFF667EEA)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context); // Tutup dialog profil
+                            _showLogoutConfirmation(
+                                context); // Tampilkan konfirmasi logout
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.exit_to_app,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Keluar',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Fungsi untuk menampilkan password
+  void _showPasswordDialog(String password, bool isDarkMode) {
+    bool obscurePassword = true;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+              title: Text(
+                'Password Login',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.grey[800],
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDarkMode
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          obscurePassword ? '••••••••••••' : password,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'monospace',
+                            color: isDarkMode ? Colors.white : Colors.grey[800],
+                            letterSpacing: obscurePassword ? 2 : 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    obscurePassword
+                        ? 'Tap untuk melihat password'
+                        : 'Tap untuk menyembunyikan password',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Tutup',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildGradientProgressBar(double progress, bool isDarkMode) {
@@ -378,6 +1171,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _username = prefs.getString('last_username') ?? 'Pengguna';
+      _password = prefs.getString('last_password') ?? '';
     });
   }
 
@@ -1060,21 +1854,20 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       height: 150,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            bannerColor,
-            bannerColor.withOpacity(0.8),
-            const Color(0xFF5A67D8),
+            primaryColor,
+            Color(0xFF667EEA),
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: primaryColor.withOpacity(0.3),
             blurRadius: 15,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -1090,13 +1883,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
-                    color: accentColorOrange,
+                    color: Colors.white,
                   ),
                 ),
                 SizedBox(height: 5),
                 Text(
                   'Atur tugas Anda, raih produktivitas tertinggi.',
-                  style: TextStyle(fontSize: 14, color: Colors.white),
+                  style: TextStyle(fontSize: 14, color: Colors.white70),
                 ),
               ],
             ),
@@ -1136,14 +1929,15 @@ class _HomeScreenState extends State<HomeScreen> {
     int completedTodos = todos.where((t) => t.isCompleted).length;
     double progress = totalTodos == 0 ? 0 : completedTodos / totalTodos;
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     final lightGradient = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [
-        const Color(0xFFF7F2FF),
-        const Color(0xFFF0E6FF),
-        const Color(0xFFE8DAFF),
-        Colors.white.withOpacity(0.9),
+        primaryColor.withOpacity(0.4),
+        const Color(0xFFE9E4FF),
+        Colors.white,
       ],
     );
 
@@ -1162,13 +1956,10 @@ class _HomeScreenState extends State<HomeScreen> {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        bannerColor,
-        bannerColor.withOpacity(0.8),
-        const Color(0xFF5A67D8),
+        primaryColor,
+        const Color(0xFF667EEA),
       ],
     );
-
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Container(
@@ -1178,33 +1969,56 @@ class _HomeScreenState extends State<HomeScreen> {
         child: CustomScrollView(
           slivers: [
             SliverAppBar(
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      gradient: bannerGradient,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child:
-                        const Icon(Icons.check, color: Colors.white, size: 20),
+              titleSpacing: 0,
+              centerTitle: false,
+              title: GestureDetector(
+                onTap: _showProfileDialog,
+                child: Container(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.white.withOpacity(0.3),
+                        child: Text(
+                          _username.isNotEmpty
+                              ? _username[0].toUpperCase()
+                              : 'U',
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Profil Saya',
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            _username,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Priority Hub',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+                ),
               ),
               backgroundColor: Colors.transparent,
               elevation: 0,
               pinned: true,
               floating: true,
-              expandedHeight: 120,
+              expandedHeight: 80,
               flexibleSpace: Container(
                 decoration: BoxDecoration(gradient: bannerGradient),
               ),
@@ -1234,7 +2048,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.logout, color: Colors.white),
-                  onPressed: _logout,
+                  onPressed: () => _showLogoutConfirmation(context),
                 ),
               ],
             ),
@@ -1250,42 +2064,72 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Container(
+                        width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: isDarkMode
-                              ? Colors.grey.shade900.withOpacity(0.7)
-                              : Colors.white.withOpacity(0.9),
+                              ? Colors.white.withOpacity(0.05)
+                              : deepPurple.withOpacity(0.03),
                           borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4)),
-                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // BAGIAN PERBAIKAN: Menghapus Gradasi Teks
-                            Text(
-                              'Halo, $_username!',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Siap menghadapi hari ini?',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: isDarkMode
-                                    ? Colors.grey.shade300
-                                    : Colors.grey.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Halo, $_username!',
+                                        style: TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDarkMode
+                                              ? Colors.white
+                                              : deepPurple,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Siap menghadapi hari ini?',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: isDarkMode
+                                              ? Colors.grey.shade300
+                                              : Colors.grey.shade700,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(30),
+                                    border: Border.all(
+                                      color: isDarkMode
+                                          ? Colors.white.withOpacity(0.3)
+                                          : deepPurple.withOpacity(0.3),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    color:
+                                        isDarkMode ? Colors.white : deepPurple,
+                                    size: 20,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -1344,12 +2188,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                        'Daftar Tugas ($selectedFilter)',
-                        style: TextStyle(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDarkMode
+                                ? [
+                                    Colors.transparent,
+                                    Colors.grey.shade900.withOpacity(0.3),
+                                  ]
+                                : [
+                                    Colors.transparent,
+                                    primaryColor.withOpacity(0.05),
+                                  ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Daftar Tugas ($selectedFilter)',
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface),
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 10),
                     ],
@@ -1360,11 +2225,63 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : filteredTodos.isEmpty
-                          ? const Center(child: Text("Tidak ada tugas."))
+                          ? Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? Colors.grey.shade900.withOpacity(0.8)
+                                      : Colors.white.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.inbox,
+                                      size: 48,
+                                      color: isDarkMode
+                                          ? Colors.grey.shade600
+                                          : Colors.grey.shade400,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      "Tidak ada tugas di kategori ini.",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: isDarkMode
+                                            ? Colors.grey.shade400
+                                            : Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      "Tambahkan tugas baru dengan menekan tombol +",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isDarkMode
+                                            ? Colors.grey.shade500
+                                            : Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
                           : Column(
                               children: filteredTodos
                                   .map((todo) => _buildTodoItem(todo))
-                                  .toList()),
+                                  .toList(),
+                            ),
                 ),
                 const SizedBox(height: 100),
               ]),
