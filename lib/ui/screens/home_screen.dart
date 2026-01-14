@@ -540,6 +540,175 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // ========== FUNGSI KONFIRMASI LOGOUT (DIPERBARUI) ==========
+  Future<void> _showLogoutConfirmation(BuildContext context) async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.grey[900] : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon dengan gradient seperti banner
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [primaryColor, Color(0xFF667EEA)],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.exit_to_app,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Judul
+                Text(
+                  'Logout dari Akun',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : deepPurple,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Pesan
+                Text(
+                  'Apakah Anda yakin ingin keluar dari akun $_username?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Tombol Aksi
+                Row(
+                  children: [
+                    // Tombol Batal
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(
+                            color: isDarkMode
+                                ? Colors.grey[700]!
+                                : Colors.grey[300]!,
+                          ),
+                          backgroundColor: Colors.transparent,
+                        ),
+                        child: Text(
+                          'Batal',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode
+                                ? Colors.grey[300]
+                                : Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Tombol Logout dengan gradient
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [primaryColor, Color(0xFF667EEA)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.exit_to_app,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Logout',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ).then((confirm) {
+      if (confirm == true) {
+        _logout();
+      }
+    });
+  }
+
   // Fungsi Dialog Profil yang DITINGKATKAN
   void _showProfileDialog() async {
     final prefs = await SharedPreferences.getInstance();
@@ -811,20 +980,55 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton(
-                        onPressed: _logout,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [primaryColor, Color(0xFF667EEA)],
                           ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: const Text(
-                          'Keluar',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context); // Tutup dialog profil
+                            _showLogoutConfirmation(
+                                context); // Tampilkan konfirmasi logout
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.exit_to_app,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Keluar',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -1844,7 +2048,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.logout, color: Colors.white),
-                  onPressed: _logout,
+                  onPressed: () => _showLogoutConfirmation(context),
                 ),
               ],
             ),
