@@ -8,7 +8,7 @@ android {
     namespace = "com.example.todolistapp"
     
     // UPDATE: Naikkan compileSdk dan targetSdk
-    compileSdk = 34  // atau flutter.compileSdkVersion.toInt()
+    compileSdk = 36  // atau flutter.compileSdkVersion.toInt()
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

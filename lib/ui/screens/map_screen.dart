@@ -51,6 +51,7 @@ class _MapScreenState extends State<MapScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _destinationController.dispose();
     super.dispose();
   }
 
@@ -184,7 +185,8 @@ class _MapScreenState extends State<MapScreen>
   }
 
   void _onMapTap(LatLng latLng) async {
-    _animationController.forward(from: 0.0);
+    _animationController.reset();
+    _animationController.forward();
 
     final address = await _mapsService.getAddressFromLatLng(
       latLng.latitude,
@@ -1071,12 +1073,25 @@ class _MapScreenState extends State<MapScreen>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pop(context);
+          if (_destinationLocation == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Silakan pilih lokasi terlebih dahulu'),
+              ),
+            );
+            return;
+          }
+
+          Navigator.pop(context, {
+            'address': _destinationController.text,
+            'lat': _destinationLocation!.latitude,
+            'lng': _destinationLocation!.longitude,
+          });
         },
         backgroundColor: const Color(0xFF9F7AEA),
         foregroundColor: Colors.white,
         elevation: 4,
-        child: const Icon(Icons.arrow_back),
+        child: const Icon(Icons.check),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );

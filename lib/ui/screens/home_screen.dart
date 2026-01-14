@@ -1255,6 +1255,9 @@ class _HomeScreenState extends State<HomeScreen> {
     DateTime? deadline = todo?.deadline;
     TimeOfDay? time = todo?.time;
     bool isUrgent = todo?.isUrgent ?? false;
+    String? locationName = todo?.locationName;
+    double? latitude = todo?.latitude;
+    double? longitude = todo?.longitude;
 
     final formKey = GlobalKey<FormState>();
 
@@ -1322,6 +1325,64 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                         isDarkMode:
                             Theme.of(context).brightness == Brightness.dark,
+                        const SizedBox(height: 15),
+                        Text(
+                          'Lokasi Tugas',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const MapScreen()),
+                            );
+
+                            if (result != null) {
+                              setStateSB(() {
+                                locationName = result['address'];
+                                latitude = result['lat'];
+                                longitude = result['lng'];
+                              });
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.location_on,
+                                    color: primaryColor),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    locationName ?? 'Pilih lokasi pada peta',
+                                    style: TextStyle(
+                                      color: locationName == null
+                                          ? Colors.grey
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.map),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 15),
                       Row(
@@ -1391,6 +1452,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           todo.time = time;
                           todo.isUrgent = isUrgent;
                           await DatabaseHelper.instance.update(todo);
+                          todo.locationName = locationName;
+                          todo.latitude = latitude;
+                          todo.longitude = longitude;
                         } else {
                           final newTodo = Todo(
                             id: DateTime.now()
@@ -1403,6 +1467,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             isUrgent: isUrgent,
                             isCompleted: false,
                             username: _username,
+                            locationName: locationName,
+                            latitude: latitude,
+                            longitude: longitude,
                           );
                           await DatabaseHelper.instance.create(newTodo);
                         }
