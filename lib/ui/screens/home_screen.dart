@@ -3,12 +3,14 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../todo_model.dart';
 import '../../database_helper.dart';
 import 'login_screen.dart';
 import '../../main.dart';
 import '../../providers/weather_provider.dart';
 import 'map_screen.dart';
+import 'location_picker_screen.dart';
 
 const Color primaryColor = Color(0xFF9F7AEA);
 const Color accentColorOrange = Color(0xFFFF9800);
@@ -1297,11 +1299,12 @@ class _HomeScreenState extends State<HomeScreen> {
     DateTime? deadline = todo?.deadline;
     TimeOfDay? time = todo?.time;
     bool isUrgent = todo?.isUrgent ?? false;
-    String? locationName = todo?.locationName;
     double? latitude = todo?.latitude;
     double? longitude = todo?.longitude;
+    String? locationName = todo?.locationName;
 
     final formKey = GlobalKey<FormState>();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     await showDialog(
       context: context,
@@ -1309,7 +1312,18 @@ class _HomeScreenState extends State<HomeScreen> {
         return StatefulBuilder(
           builder: (context, setStateSB) {
             return AlertDialog(
-              title: Text(isEditing ? 'Edit Tugas' : 'Tambah Tugas Baru'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+              title: Text(
+                isEditing ? 'Edit Tugas' : 'Tambah Tugas Baru',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : deepPurple,
+                ),
+              ),
               content: SingleChildScrollView(
                 child: Form(
                   key: formKey,
@@ -1317,215 +1331,610 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      TextFormField(
-                        initialValue: title,
-                        decoration: InputDecoration(
-                          labelText: 'Nama Tugas',
-                          labelStyle: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
+                      // Nama Tugas
+                      Text(
+                        'Nama Tugas',
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.white : Colors.grey[800],
                         ),
-                        onChanged: (value) => title = value,
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Tidak boleh kosong'
-                            : null,
                       ),
-                      const SizedBox(height: 15),
-                      DropdownButtonFormField<String>(
-                        value: category,
-                        decoration: InputDecoration(
-                          labelText: 'Kategori',
-                          labelStyle: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDarkMode
+                              ? Colors.grey[800]!.withOpacity(0.5)
+                              : Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDarkMode
+                                ? Colors.grey[700]!
+                                : Colors.grey[300]!,
+                            width: 1.5,
                           ),
                         ),
-                        items: categories.map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(
-                              value,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
+                        child: TextFormField(
+                          initialValue: title,
+                          onChanged: (value) {
+                            setStateSB(() {
+                              title = value;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            hintText: 'Masukkan nama tugas',
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.all(16),
+                            hintStyle: TextStyle(
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[500],
+                            ),
+                          ),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: isDarkMode ? Colors.white : Colors.grey[800],
+                          ),
+                          maxLines: 1,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Nama tugas tidak boleh kosong';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Kategori
+                      Text(
+                        'Kategori',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.white : Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDarkMode
+                              ? Colors.grey[800]!.withOpacity(0.5)
+                              : Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDarkMode
+                                ? Colors.grey[700]!
+                                : Colors.grey[300]!,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: DropdownButtonFormField<String>(
+                          value: category,
+                          onChanged: (String? newValue) {
+                            setStateSB(() {
+                              category = newValue!;
+                            });
+                          },
+                          items: categories.map((String category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _getCategoryIcon(category),
+                                    color: isDarkMode
+                                        ? Colors.grey[300]
+                                        : Colors.grey[700],
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    category,
+                                    style: TextStyle(
+                                      color: isDarkMode
+                                          ? Colors.white
+                                          : Colors.grey[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                          dropdownColor:
+                              isDarkMode ? Colors.grey[900] : Colors.white,
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white : Colors.grey[800],
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Garis pemisah
+                      Container(
+                        height: 1,
+                        color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Lokasi Tujuan
+                      Text(
+                        'Lokasi Tujuan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.white : Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LocationPickerScreen(
+                                initialLatitude: latitude,
+                                initialLongitude: longitude,
+                                initialLocationName: locationName,
                               ),
                             ),
                           );
-                        }).toList(),
-                        dropdownColor: Theme.of(context).cardColor,
-                        onChanged: (String? newValue) {
-                          if (newValue != null)
-                            setStateSB(() => category = newValue);
+
+                          if (result != null) {
+                            setStateSB(() {
+                              latitude = result['latitude'];
+                              longitude = result['longitude'];
+                              locationName = result['locationName'];
+                            });
+                          }
                         },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? Colors.grey[800]!.withOpacity(0.5)
+                                : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDarkMode
+                                  ? Colors.grey[700]!
+                                  : Colors.grey[300]!,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (locationName != null)
+                                Column(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on,
+                                      size: 32,
+                                      color: primaryColor,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      locationName!,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: isDarkMode
+                                            ? Colors.white
+                                            : Colors.grey[800],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Tap untuk mengubah lokasi',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDarkMode
+                                            ? Colors.grey[500]
+                                            : Colors.grey[500],
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else
+                                Column(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      size: 48,
+                                      color: isDarkMode
+                                          ? Colors.grey[500]
+                                          : Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'TAP UNTUK SET LOKASI',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Opsional - Tambahkan tujuan di peta',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDarkMode
+                                            ? Colors.grey[500]
+                                            : Colors.grey[500],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 15),
+                      if (locationName != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: () {
+                                setStateSB(() {
+                                  latitude = null;
+                                  longitude = null;
+                                  locationName = null;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? Colors.red[900]!.withOpacity(0.2)
+                                      : Colors.red[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.clear,
+                                      size: 16,
+                                      color: Colors.red,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Hapus Lokasi',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 20),
+
+                      // Waktu Task
                       TimePickerWidget(
                         initialTime: time,
                         onTimeChanged: (newTime) {
-                          setStateSB(() => time = newTime);
+                          setStateSB(() {
+                            time = newTime;
+                          });
                         },
-                        isDarkMode:
-                            Theme.of(context).brightness == Brightness.dark,
-                        const SizedBox(height: 15),
-                        Text(
-                          'Lokasi Tugas',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const MapScreen()),
-                            );
+                        isDarkMode: isDarkMode,
+                      ),
+                      const SizedBox(height: 20),
 
-                            if (result != null) {
-                              setStateSB(() {
-                                locationName = result['address'];
-                                latitude = result['lat'];
-                                longitude = result['lng'];
-                              });
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.3),
-                              ),
+                      // Deadline
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Deadline',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  isDarkMode ? Colors.white : Colors.grey[800],
                             ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.location_on,
-                                    color: primaryColor),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    locationName ?? 'Pilih lokasi pada peta',
-                                    style: TextStyle(
-                                      color: locationName == null
-                                          ? Colors.grey
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    final DateTime? picked =
+                                        await showDatePicker(
+                                      context: context,
+                                      initialDate: deadline ?? DateTime.now(),
+                                      firstDate: DateTime(2000),
+                                      lastDate: DateTime(2100),
+                                      builder: (BuildContext context,
+                                          Widget? child) {
+                                        return Theme(
+                                          data: isDarkMode
+                                              ? ThemeData.dark().copyWith(
+                                                  colorScheme: ColorScheme.dark(
+                                                    primary: primaryColor,
+                                                    secondary: accentColorPink,
+                                                  ),
+                                                  dialogBackgroundColor:
+                                                      Colors.grey[900],
+                                                )
+                                              : ThemeData.light().copyWith(
+                                                  colorScheme:
+                                                      ColorScheme.light(
+                                                    primary: primaryColor,
+                                                    secondary: accentColorPink,
+                                                  ),
+                                                ),
+                                          child: child!,
+                                        );
+                                      },
+                                    );
+                                    if (picked != null) {
+                                      setStateSB(() {
+                                        deadline = picked;
+                                      });
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: isDarkMode
+                                          ? Colors.grey[800]!.withOpacity(0.5)
+                                          : Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isDarkMode
+                                            ? Colors.grey[700]!
+                                            : Colors.grey[300]!,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          deadline != null
+                                              ? DateFormat('dd MMM yyyy')
+                                                  .format(deadline!)
+                                              : 'Pilih Tanggal',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: isDarkMode
+                                                ? Colors.white
+                                                : Colors.grey[800],
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.calendar_today,
+                                          color: isDarkMode
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                          size: 20,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                                const Icon(Icons.map),
-                              ],
-                            ),
+                              ),
+                              if (deadline != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8.0),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setStateSB(() {
+                                        deadline = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode
+                                            ? Colors.red[900]!.withOpacity(0.2)
+                                            : Colors.red[50],
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        Icons.clear,
+                                        size: 20,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+                          const SizedBox(height: 4),
                           Text(
-                            'Deadline: ${deadline == null ? 'Tidak Ada' : DateFormat('dd/MM/yyyy').format(deadline!)}',
+                            deadline != null
+                                ? 'Tap tanggal untuk mengubah'
+                                : 'Tidak Ada',
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: 12,
+                              color: isDarkMode
+                                  ? Colors.grey[500]
+                                  : Colors.grey[500],
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              final pickedDate = await showDatePicker(
-                                context: context,
-                                initialDate: deadline ?? DateTime.now(),
-                                firstDate: DateTime.now(),
-                                lastDate: DateTime(2100),
-                              );
-                              if (pickedDate != null)
-                                setStateSB(() => deadline = pickedDate);
-                            },
-                            child: const Text('Pilih Tanggal'),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 20),
+
+                      // Prioritas Mendesak
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Prioritas Mendesak (Urgent)',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                          Switch(
+                          Checkbox(
                             value: isUrgent,
-                            onChanged: (bool value) =>
-                                setStateSB(() => isUrgent = value),
-                            activeColor: primaryColor,
+                            onChanged: (value) {
+                              setStateSB(() {
+                                isUrgent = value ?? false;
+                              });
+                            },
+                            activeColor: accentColorOrange,
+                            checkColor: Colors.white,
                           ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Prioritas Mendesak (Urgent)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.grey[800],
+                              ),
+                            ),
+                          ),
+                          if (isUrgent)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: accentColorOrange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.local_fire_department,
+                                    size: 16,
+                                    color: accentColorOrange,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Urgent',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: accentColorOrange,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
               ),
-              backgroundColor: Theme.of(context).cardColor,
               actions: <Widget>[
+                // Tombol Batal
                 TextButton(
-                  child: const Text('Batal'),
                   onPressed: () => Navigator.of(context).pop(),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  onPressed: () async {
-                    if (formKey.currentState!.validate()) {
-                      try {
-                        if (isEditing) {
-                          todo!.title = title;
-                          todo.category = category;
-                          todo.deadline = deadline;
-                          todo.time = time;
-                          todo.isUrgent = isUrgent;
-                          await DatabaseHelper.instance.update(todo);
-                          todo.locationName = locationName;
-                          todo.latitude = latitude;
-                          todo.longitude = longitude;
-                        } else {
-                          final newTodo = Todo(
-                            id: DateTime.now()
-                                .millisecondsSinceEpoch
-                                .toString(),
-                            title: title,
-                            category: category,
-                            deadline: deadline,
-                            time: time,
-                            isUrgent: isUrgent, // <-- DIPERBAIKI
-                            isCompleted: false,
-                            username: _username,
-                            locationName: locationName,
-                            latitude: latitude,
-                            longitude: longitude,
+                ),
+                const SizedBox(width: 8),
+
+                // Tombol Simpan
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [primaryColor, Color(0xFF667EEA)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryColor.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (formKey.currentState!.validate()) {
+                        try {
+                          if (isEditing) {
+                            todo!.title = title;
+                            todo.category = category;
+                            todo.deadline = deadline;
+                            todo.time = time;
+                            todo.isUrgent = isUrgent;
+                            todo.latitude = latitude;
+                            todo.longitude = longitude;
+                            todo.locationName = locationName;
+                            await DatabaseHelper.instance.update(todo);
+                          } else {
+                            final newTodo = Todo(
+                              id: DateTime.now()
+                                  .millisecondsSinceEpoch
+                                  .toString(),
+                              title: title,
+                              category: category,
+                              deadline: deadline,
+                              time: time,
+                              isUrgent: isUrgent,
+                              isCompleted: false,
+                              username: _username,
+                              latitude: latitude,
+                              longitude: longitude,
+                              locationName: locationName,
+                            );
+                            await DatabaseHelper.instance.create(newTodo);
+                          }
+                          await _refreshTodos();
+                          if (mounted) Navigator.of(context).pop();
+                        } catch (e) {
+                          print("Error saving: $e");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Gagal menyimpan: $e")),
                           );
-                          await DatabaseHelper.instance.create(newTodo);
                         }
-                        await _refreshTodos();
-                        if (mounted) Navigator.of(context).pop();
-                      } catch (e) {
-                        print("Error saving: $e");
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Gagal menyimpan: $e")),
-                        );
                       }
-                    }
-                  },
-                  child: Text(isEditing ? 'Simpan Perubahan' : 'Simpan Tugas'),
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      isEditing ? 'Simpan Perubahan' : 'Simpan Tugas',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             );
@@ -1888,7 +2297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 6),
 
-                    // Baris informasi: Kategori, Urgent, Waktu, Deadline
+                    // Baris informasi: Kategori, Urgent, Waktu, Deadline, Lokasi
                     Wrap(
                       spacing: 8,
                       runSpacing: 4,
@@ -2011,6 +2420,45 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
+
+                        // ============ TAMBAHAN: Badge Lokasi (jika ada) ============
+                        if (todo.latitude != null && todo.longitude != null)
+                          GestureDetector(
+                            onTap: () {
+                              _showLocationDialog(todo);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.purple.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    size: 12,
+                                    color: Colors.purple,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Lokasi',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.purple,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -2066,6 +2514,266 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+// ============ TAMBAHAN: Fungsi untuk menampilkan dialog lokasi ============
+  void _showLocationDialog(Todo todo) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool hasLocation = todo.latitude != null && todo.longitude != null;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.location_on,
+              color: Colors.purple,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Lokasi Tugas',
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.grey[800],
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Nama tugas
+            Text(
+              todo.title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            if (hasLocation)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Alamat lokasi
+                  if (todo.locationName != null &&
+                      todo.locationName!.isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Alamat:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? Colors.grey[800]
+                                : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            todo.locationName!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color:
+                                  isDarkMode ? Colors.white : Colors.grey[800],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+
+                  // Koordinat
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.gps_fixed,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Koordinat',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              '${todo.latitude!.toStringAsFixed(6)}, ${todo.longitude!.toStringAsFixed(6)}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDarkMode
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Tombol Buka di Maps
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _openInMaps(todo.latitude!, todo.longitude!);
+                      },
+                      icon: Icon(
+                        Icons.map,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        'Buka di Google Maps',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Tombol Lihat di Peta Aplikasi
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _openInAppMap(todo);
+                      },
+                      icon: Icon(
+                        Icons.explore,
+                        color: Colors.blue,
+                      ),
+                      label: Text(
+                        'Lihat di Peta Aplikasi',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        side: BorderSide(color: Colors.blue),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.location_off,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Tidak ada lokasi yang ditetapkan',
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Tutup',
+              style: TextStyle(
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+// ============ TAMBAHAN: Fungsi untuk membuka di Google Maps ============
+  Future<void> _openInMaps(double lat, double lng) async {
+    final url =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak dapat membuka Google Maps'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error opening maps: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal membuka maps: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+// ============ TAMBAHAN: Fungsi untuk membuka di MapScreen aplikasi ============
+  void _openInAppMap(Todo todo) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapScreen(
+          initialLatitude: todo.latitude,
+          initialLongitude: todo.longitude,
+          todoTitle: todo.title,
+          zoom: 16.0,
+          isFromTodo: true, // TAMBAHAN: Flag untuk menunjukkan ini dari todo
         ),
       ),
     );

@@ -7,7 +7,21 @@ import '../../data/services/maps_service.dart';
 import '../../providers/weather_provider.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({Key? key}) : super(key: key);
+  final double? initialLatitude;
+  final double? initialLongitude;
+  final String? todoTitle;
+  final double? zoom;
+  final bool?
+      isFromTodo; // TAMBAHAN: Flag untuk menentukan jika datang dari todo
+
+  const MapScreen({
+    Key? key,
+    this.initialLatitude,
+    this.initialLongitude,
+    this.todoTitle,
+    this.zoom,
+    this.isFromTodo = false, // Default false
+  }) : super(key: key);
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -36,8 +50,6 @@ class _MapScreenState extends State<MapScreen>
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
-
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -46,6 +58,47 @@ class _MapScreenState extends State<MapScreen>
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+
+    // TAMBAHAN: Inisialisasi dengan lokasi dari todo jika ada
+    _initializeWithTodoLocation();
+  }
+
+  // TAMBAHAN: Fungsi untuk inisialisasi dengan lokasi todo
+  void _initializeWithTodoLocation() async {
+    if (widget.initialLatitude != null && widget.initialLongitude != null) {
+      // Set destination location dari todo
+      _destinationLocation = LatLng(
+        widget.initialLatitude!,
+        widget.initialLongitude!,
+      );
+
+      // Dapatkan alamat dari lokasi todo
+      try {
+        final address = await _mapsService.getAddressFromLatLng(
+          widget.initialLatitude!,
+          widget.initialLongitude!,
+        );
+        _address = address;
+        _destinationController.text = address;
+      } catch (e) {
+        _address =
+            'Lokasi: ${widget.initialLatitude}, ${widget.initialLongitude}';
+        _destinationController.text = 'Lokasi Tugas';
+      }
+
+      // Dapatkan lokasi saat ini dan hitung rute
+      await _getCurrentLocation();
+
+      // Jika isFromTodo true, set center ke lokasi todo
+      if (widget.isFromTodo == true) {
+        _mapController.move(_destinationLocation!, widget.zoom ?? 15.0);
+      }
+    } else {
+      // Jika tidak ada lokasi todo, ambil lokasi saat ini
+      await _getCurrentLocation();
+    }
+
+    setState(() => _isLoading = false);
   }
 
   @override
@@ -67,14 +120,19 @@ class _MapScreenState extends State<MapScreen>
 
       setState(() {
         _currentLocation = latLng;
-        _address = address;
-        _isLoading = false;
+        if (_destinationLocation == null) {
+          _address = address;
+        }
       });
 
-      _mapController.move(latLng, 15.0);
+      // TAMBAHAN: Jika ada lokasi todo, hitung rute
+      if (_destinationLocation != null && _currentLocation != null) {
+        _calculateRoute();
+      } else {
+        _mapController.move(latLng, widget.zoom ?? 15.0);
+      }
     } catch (e) {
       setState(() {
-        _isLoading = false;
         _address = 'Gagal mendapatkan lokasi: $e';
       });
     }
@@ -140,7 +198,7 @@ class _MapScreenState extends State<MapScreen>
       if (routePoints.isNotEmpty) {
         setState(() {
           _polylinePoints = routePoints;
-          _distance = _mapsService.calculateDistance(
+          _distance = _mapsService.calculateDistanceKm(
             _currentLocation!,
             _destinationLocation!,
           );
@@ -201,11 +259,85 @@ class _MapScreenState extends State<MapScreen>
     _calculateRoute();
   }
 
-  Widget _buildSearchBar() {
+  // TAMBAHAN: Widget untuk menampilkan judul todo jika ada
+  Widget _buildTodoHeader() {
+    if (widget.todoTitle == null) return const SizedBox();
+
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Positioned(
-      top: 16,
+      top: 90,
+      left: 16,
+      right: 16,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDarkMode ? Colors.grey.shade900 : Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF9F7AEA).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.task_alt,
+                  color: Color(0xFF9F7AEA),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lokasi Tugas',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                    Text(
+                      widget.todoTitle!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final topPosition = widget.todoTitle != null ? 150.0 : 16.0;
+
+    return Positioned(
+      top: topPosition,
       left: 16,
       right: 16,
       child: AnimatedContainer(
@@ -377,9 +509,10 @@ class _MapScreenState extends State<MapScreen>
 
   Widget _buildTransportSelector() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final topPosition = widget.todoTitle != null ? 230.0 : 110.0;
 
     return Positioned(
-      top: 110,
+      top: topPosition,
       right: 16,
       child: Material(
         color: Colors.transparent,
@@ -571,7 +704,9 @@ class _MapScreenState extends State<MapScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Rute ke Tujuan',
+                                widget.todoTitle != null
+                                    ? 'Rute ke Lokasi Tugas'
+                                    : 'Rute ke Tujuan',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
@@ -669,9 +804,10 @@ class _MapScreenState extends State<MapScreen>
 
   Widget _buildLocationCard() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final topPosition = widget.todoTitle != null ? 230.0 : 110.0;
 
     return Positioned(
-      top: 110,
+      top: topPosition,
       left: 16,
       right: 90,
       child: Material(
@@ -869,6 +1005,14 @@ class _MapScreenState extends State<MapScreen>
     );
   }
 
+  // TAMBAHAN: Fungsi untuk menentukan judul AppBar
+  String _getAppBarTitle() {
+    if (widget.todoTitle != null) {
+      return 'Lokasi: ${widget.todoTitle}';
+    }
+    return 'Peta & Navigasi';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -888,26 +1032,27 @@ class _MapScreenState extends State<MapScreen>
               child: const Icon(Icons.map, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Peta & Navigasi',
-              style: TextStyle(
+            Text(
+              _getAppBarTitle(),
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
                 color: Colors.white,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
         elevation: 0,
-        // Tone gradiasi disesuaikan dengan HomeScreen (Ungu ke Biru Muda)
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF9F7AEA), // primaryColor
-                Color(0xFF667EEA), // bannerGradientEnd
+                Color(0xFF9F7AEA),
+                Color(0xFF667EEA),
               ],
             ),
           ),
@@ -919,18 +1064,20 @@ class _MapScreenState extends State<MapScreen>
           ),
         ),
         actions: [
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
+          if (widget.isFromTodo == true)
+            IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child:
+                    const Icon(Icons.arrow_back, size: 20, color: Colors.white),
               ),
-              child: const Icon(Icons.route, size: 20, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+              tooltip: 'Kembali',
             ),
-            onPressed: _destinationLocation != null ? _calculateRoute : null,
-            tooltip: 'Hitung Rute',
-          ),
           const SizedBox(width: 8),
         ],
       ),
@@ -939,8 +1086,11 @@ class _MapScreenState extends State<MapScreen>
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              center: LatLng(-6.200000, 106.816666),
-              zoom: 12.0,
+              center: widget.initialLatitude != null &&
+                      widget.initialLongitude != null
+                  ? LatLng(widget.initialLatitude!, widget.initialLongitude!)
+                  : LatLng(-6.200000, 106.816666),
+              zoom: widget.zoom ?? 12.0,
               interactiveFlags: InteractiveFlag.all,
               onTap: (tapPosition, latLng) => _onMapTap(latLng),
             ),
@@ -1019,11 +1169,17 @@ class _MapScreenState extends State<MapScreen>
                               width: 2,
                             ),
                           ),
-                          child: const Icon(
-                            Icons.flag,
-                            color: Colors.green,
-                            size: 30,
-                          ),
+                          child: widget.todoTitle != null
+                              ? const Icon(
+                                  Icons.task_alt,
+                                  color: Colors.green,
+                                  size: 30,
+                                )
+                              : const Icon(
+                                  Icons.flag,
+                                  color: Colors.green,
+                                  size: 30,
+                                ),
                         ),
                       ),
                     ),
@@ -1054,7 +1210,9 @@ class _MapScreenState extends State<MapScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Mengambil lokasi...',
+                      widget.todoTitle != null
+                          ? 'Memuat lokasi tugas...'
+                          : 'Mengambil lokasi...',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDarkMode ? Colors.white : Colors.black,
@@ -1064,6 +1222,7 @@ class _MapScreenState extends State<MapScreen>
                 ),
               ),
             ),
+          _buildTodoHeader(), // TAMBAHAN
           _buildSearchBar(),
           _buildLocationCard(),
           _buildTransportSelector(),
@@ -1071,28 +1230,30 @@ class _MapScreenState extends State<MapScreen>
           _buildMapControls(),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (_destinationLocation == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Silakan pilih lokasi terlebih dahulu'),
-              ),
-            );
-            return;
-          }
+      floatingActionButton: widget.isFromTodo == true
+          ? null // Sembunyikan FAB jika dari todo
+          : FloatingActionButton(
+              onPressed: () {
+                if (_destinationLocation == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Silakan pilih lokasi terlebih dahulu'),
+                    ),
+                  );
+                  return;
+                }
 
-          Navigator.pop(context, {
-            'address': _destinationController.text,
-            'lat': _destinationLocation!.latitude,
-            'lng': _destinationLocation!.longitude,
-          });
-        },
-        backgroundColor: const Color(0xFF9F7AEA),
-        foregroundColor: Colors.white,
-        elevation: 4,
-        child: const Icon(Icons.check),
-      ),
+                Navigator.pop(context, {
+                  'address': _destinationController.text,
+                  'lat': _destinationLocation!.latitude,
+                  'lng': _destinationLocation!.longitude,
+                });
+              },
+              backgroundColor: const Color(0xFF9F7AEA),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              child: const Icon(Icons.check),
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
