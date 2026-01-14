@@ -236,9 +236,15 @@ class _LoginScreenState extends State<LoginScreen> {
       child: TextField(
         controller: controller,
         obscureText: isPassword ? _isObscure : false,
+        style: const TextStyle(
+          // TAMBAHKAN INI
+          color: Colors.black, // Warna teks input menjadi hitam
+          fontSize: 16,
+        ),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+          hintStyle: const TextStyle(color: Colors.grey), // Untuk hint text
           prefixIcon: Icon(icon, color: primaryPurple),
           suffixIcon: isPassword
               ? IconButton(
