@@ -11,8 +11,7 @@ class MapScreen extends StatefulWidget {
   final double? initialLongitude;
   final String? todoTitle;
   final double? zoom;
-  final bool?
-      isFromTodo; // TAMBAHAN: Flag untuk menentukan jika datang dari todo
+  final bool? isFromTodo;
 
   const MapScreen({
     Key? key,
@@ -20,7 +19,7 @@ class MapScreen extends StatefulWidget {
     this.initialLongitude,
     this.todoTitle,
     this.zoom,
-    this.isFromTodo = false, // Default false
+    this.isFromTodo = false,
   }) : super(key: key);
 
   @override
@@ -46,6 +45,15 @@ class _MapScreenState extends State<MapScreen>
   String _selectedTransport = 'walking';
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
+  String _estimatedTime = '';
+  bool _showSearchResults = false;
+
+  // Kecepatan rata-rata dalam km/jam untuk berbagai transportasi
+  final Map<String, double> _averageSpeeds = {
+    'walking': 5.0,
+    'cycling': 15.0,
+    'driving': 40.0,
+  };
 
   @override
   void initState() {
@@ -59,20 +67,16 @@ class _MapScreenState extends State<MapScreen>
       curve: Curves.easeInOut,
     );
 
-    // TAMBAHAN: Inisialisasi dengan lokasi dari todo jika ada
     _initializeWithTodoLocation();
   }
 
-  // TAMBAHAN: Fungsi untuk inisialisasi dengan lokasi todo
   void _initializeWithTodoLocation() async {
     if (widget.initialLatitude != null && widget.initialLongitude != null) {
-      // Set destination location dari todo
       _destinationLocation = LatLng(
         widget.initialLatitude!,
         widget.initialLongitude!,
       );
 
-      // Dapatkan alamat dari lokasi todo
       try {
         final address = await _mapsService.getAddressFromLatLng(
           widget.initialLatitude!,
@@ -83,18 +87,15 @@ class _MapScreenState extends State<MapScreen>
       } catch (e) {
         _address =
             'Lokasi: ${widget.initialLatitude}, ${widget.initialLongitude}';
-        _destinationController.text = 'Lokasi Tugas';
+        _destinationController.text = widget.todoTitle ?? 'Lokasi Tugas';
       }
 
-      // Dapatkan lokasi saat ini dan hitung rute
       await _getCurrentLocation();
 
-      // Jika isFromTodo true, set center ke lokasi todo
       if (widget.isFromTodo == true) {
-        _mapController.move(_destinationLocation!, widget.zoom ?? 15.0);
+        _mapController.move(_destinationLocation!, widget.zoom ?? 16.0);
       }
     } else {
-      // Jika tidak ada lokasi todo, ambil lokasi saat ini
       await _getCurrentLocation();
     }
 
@@ -125,7 +126,6 @@ class _MapScreenState extends State<MapScreen>
         }
       });
 
-      // TAMBAHAN: Jika ada lokasi todo, hitung rute
       if (_destinationLocation != null && _currentLocation != null) {
         _calculateRoute();
       } else {
@@ -133,8 +133,34 @@ class _MapScreenState extends State<MapScreen>
       }
     } catch (e) {
       setState(() {
-        _address = 'Gagal mendapatkan lokasi: $e';
+        _address = 'Gagal mendapatkan lokasi';
       });
+    }
+  }
+
+  void _calculateEstimatedTime() {
+    if (_distance <= 0) {
+      setState(() {
+        _estimatedTime = '';
+      });
+      return;
+    }
+
+    final speed = _averageSpeeds[_selectedTransport] ?? 5.0;
+    final hours = _distance / speed;
+    final totalMinutes = (hours * 60).ceil();
+
+    if (totalMinutes < 60) {
+      _estimatedTime = '$totalMinutes menit';
+    } else {
+      final hoursPart = (totalMinutes / 60).floor();
+      final minutesPart = totalMinutes % 60;
+
+      if (minutesPart == 0) {
+        _estimatedTime = '$hoursPart jam';
+      } else {
+        _estimatedTime = '$hoursPart jam $minutesPart menit';
+      }
     }
   }
 
@@ -142,12 +168,14 @@ class _MapScreenState extends State<MapScreen>
     if (query.length < 3) {
       setState(() {
         _searchResults = [];
+        _showSearchResults = false;
       });
       return;
     }
 
     setState(() {
       _isSearching = true;
+      _showSearchResults = true;
     });
 
     try {
@@ -170,14 +198,18 @@ class _MapScreenState extends State<MapScreen>
       _destinationLocation = latLng;
       _destinationController.text = result['displayName'];
       _searchResults = [];
+      _showSearchResults = false;
     });
+
+    _animationController.reset();
+    _animationController.forward();
 
     if (_currentLocation != null) {
       final centerLat = (_currentLocation!.latitude + latLng.latitude) / 2;
       final centerLng = (_currentLocation!.longitude + latLng.longitude) / 2;
-      _mapController.move(LatLng(centerLat, centerLng), 13.0);
+      _mapController.move(LatLng(centerLat, centerLng), 14.0);
     } else {
-      _mapController.move(latLng, 13.0);
+      _mapController.move(latLng, 14.0);
     }
 
     _calculateRoute();
@@ -204,11 +236,14 @@ class _MapScreenState extends State<MapScreen>
           );
           _showRoute = true;
         });
+
+        _calculateEstimatedTime();
+        _animationController.reset();
+        _animationController.forward();
       } else {
         _calculateStraightLineDistance();
       }
     } catch (e) {
-      print('Error calculating route: $e');
       _calculateStraightLineDistance();
     }
   }
@@ -229,6 +264,10 @@ class _MapScreenState extends State<MapScreen>
       _showRoute = true;
       _polylinePoints = [_currentLocation!, _destinationLocation!];
     });
+
+    _calculateEstimatedTime();
+    _animationController.reset();
+    _animationController.forward();
   }
 
   void _clearDestination() {
@@ -239,6 +278,8 @@ class _MapScreenState extends State<MapScreen>
       _polylinePoints.clear();
       _distance = 0.0;
       _searchResults = [];
+      _estimatedTime = '';
+      _showSearchResults = false;
     });
   }
 
@@ -259,373 +300,282 @@ class _MapScreenState extends State<MapScreen>
     _calculateRoute();
   }
 
-  // TAMBAHAN: Widget untuk menampilkan judul todo jika ada
-  Widget _buildTodoHeader() {
-    if (widget.todoTitle == null) return const SizedBox();
-
+  // Compact Search Bar dengan toggle
+  Widget _buildCompactSearchBar() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Positioned(
-      top: 90,
+      top: MediaQuery.of(context).padding.top + 20,
       left: 16,
       right: 16,
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF9F7AEA).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.task_alt,
-                  color: Color(0xFF9F7AEA),
-                  size: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Search Bar Minimalis
+          Material(
+            color: Colors.transparent,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.grey.shade900.withOpacity(0.9)
+                    : Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: isDarkMode
+                      ? Colors.grey.shade700.withOpacity(0.3)
+                      : Colors.grey.shade300.withOpacity(0.5),
+                  width: 1,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
                   children: [
-                    Text(
-                      'Lokasi Tugas',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDarkMode
-                            ? Colors.grey.shade400
-                            : Colors.grey.shade600,
+                    Icon(
+                      Icons.search,
+                      color: const Color(0xFF9F7AEA),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _destinationController,
+                        decoration: InputDecoration(
+                          hintText: widget.todoTitle != null
+                              ? 'Cari lokasi lain...'
+                              : 'Cari alamat...',
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(
+                            color: isDarkMode
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade500,
+                            fontSize: 14,
+                          ),
+                          isDense: true,
+                        ),
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                        onChanged: (value) {
+                          _searchAddress(value);
+                        },
+                        onTap: () {
+                          setState(() {
+                            _showSearchResults = true;
+                          });
+                        },
                       ),
                     ),
-                    Text(
+                    if (_destinationController.text.isNotEmpty)
+                      IconButton(
+                        icon: Icon(Icons.clear, size: 18),
+                        color: Colors.red,
+                        onPressed: () {
+                          _destinationController.clear();
+                          _clearDestination();
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Info Lokasi Tugas (minimalis)
+          if (widget.todoTitle != null && _estimatedTime.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF9F7AEA).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF9F7AEA).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.task_alt,
+                    color: const Color(0xFF9F7AEA),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
                       widget.todoTitle!,
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                         color: isDarkMode ? Colors.white : Colors.black,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final topPosition = widget.todoTitle != null ? 150.0 : 16.0;
-
-    return Positioned(
-      top: topPosition,
-      left: 16,
-      right: 16,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            children: [
-              Row(
-                children: [
+                  ),
                   const SizedBox(width: 8),
-                  Icon(Icons.search,
-                      color: isDarkMode
-                          ? Colors.grey.shade300
-                          : Colors.grey.shade600),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _destinationController,
-                      decoration: InputDecoration(
-                        hintText: 'Cari alamat tujuan...',
-                        border: InputBorder.none,
-                        hintStyle: TextStyle(
-                            color: isDarkMode
-                                ? Colors.grey.shade400
-                                : Colors.grey.shade600),
-                      ),
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: isDarkMode ? Colors.white : Colors.black,
-                      ),
-                      onChanged: (value) {
-                        _searchAddress(value);
-                      },
-                      onSubmitted: (value) {
-                        if (value.isNotEmpty) {
-                          _searchAddress(value);
-                        }
-                      },
+                  Icon(
+                    Icons.timer,
+                    size: 12,
+                    color: const Color(0xFF9F7AEA),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _estimatedTime,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF9F7AEA),
                     ),
                   ),
-                  if (_destinationController.text.isNotEmpty)
-                    IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.red),
-                      onPressed: () {
-                        _destinationController.clear();
-                        _clearDestination();
-                      },
-                    ),
-                  const SizedBox(width: 8),
                 ],
               ),
-              if (_isSearching)
-                const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF9F7AEA),
-                    ),
+            ),
+
+          // Hasil Pencarian (collapse/expand)
+          if (_showSearchResults && _searchResults.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.3,
+              ),
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.grey.shade900.withOpacity(0.95)
+                    : Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
                   ),
-                ),
-              if (_searchResults.isNotEmpty)
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 5,
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Header hasil pencarian
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade100,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
                       ),
-                    ],
-                  ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _searchResults.length,
-                    itemBuilder: (context, index) {
-                      final result = _searchResults[index];
-                      return Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            _selectSearchResult(result);
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: index < _searchResults.length - 1
-                                  ? Border(
-                                      bottom: BorderSide(
-                                        color: isDarkMode
-                                            ? Colors.grey.shade700
-                                            : Colors.grey.shade300,
-                                        width: 0.5,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: isDarkMode
-                                      ? Colors.grey.shade300
-                                      : const Color(0xFF9F7AEA),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        result['displayName'],
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: isDarkMode
-                                              ? Colors.white
-                                              : Colors.black,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${result['lat'].toStringAsFixed(4)}, ${result['lon'].toStringAsFixed(4)}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: isDarkMode
-                                              ? Colors.grey.shade400
-                                              : Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Hasil Pencarian',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode
+                                ? Colors.grey.shade300
+                                : Colors.grey.shade700,
                           ),
                         ),
-                      );
-                    },
+                        IconButton(
+                          icon: Icon(Icons.close, size: 16),
+                          color: Colors.grey,
+                          onPressed: () {
+                            setState(() {
+                              _showSearchResults = false;
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-            ],
-          ),
-        ),
+                  // Daftar hasil
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        final result = _searchResults[index];
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _selectSearchResult(result),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                border: index < _searchResults.length - 1
+                                    ? Border(
+                                        bottom: BorderSide(
+                                          color: isDarkMode
+                                              ? Colors.grey.shade800
+                                              : Colors.grey.shade200,
+                                          width: 0.5,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.place,
+                                    color: const Color(0xFF9F7AEA),
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          result['displayName'],
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: isDarkMode
+                                                ? Colors.white
+                                                : Colors.black,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildTransportSelector() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final topPosition = widget.todoTitle != null ? 230.0 : 110.0;
-
-    return Positioned(
-      top: topPosition,
-      right: 16,
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildTransportButton(
-                icon: Icons.directions_walk,
-                label: 'Jalan',
-                isSelected: _selectedTransport == 'walking',
-                color: const Color(0xFF4CAF50),
-                onTap: () {
-                  setState(() => _selectedTransport = 'walking');
-                  if (_destinationLocation != null) _calculateRoute();
-                },
-              ),
-              _buildTransportButton(
-                icon: Icons.directions_bike,
-                label: 'Sepeda',
-                isSelected: _selectedTransport == 'cycling',
-                color: const Color(0xFF2196F3),
-                onTap: () {
-                  setState(() => _selectedTransport = 'cycling');
-                  if (_destinationLocation != null) _calculateRoute();
-                },
-              ),
-              _buildTransportButton(
-                icon: Icons.directions_car,
-                label: 'Mobil',
-                isSelected: _selectedTransport == 'driving',
-                color: const Color(0xFFF44336),
-                onTap: () {
-                  setState(() => _selectedTransport = 'driving');
-                  if (_destinationLocation != null) _calculateRoute();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTransportButton({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color
-                      : (isDarkMode
-                          ? Colors.grey.shade800
-                          : Colors.grey.shade200),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: isSelected
-                      ? Colors.white
-                      : (isDarkMode
-                          ? Colors.grey.shade300
-                          : Colors.grey.shade700),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: isSelected
-                      ? color
-                      : (isDarkMode
-                          ? Colors.grey.shade300
-                          : Colors.grey.shade700),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRouteInfoCard() {
+  // Floating info panel yang muncul di bawah
+  Widget _buildFloatingInfoPanel() {
     if (!_showRoute || _destinationLocation == null) return const SizedBox();
 
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -636,7 +586,7 @@ class _MapScreenState extends State<MapScreen>
 
     switch (_selectedTransport) {
       case 'walking':
-        transportText = 'Jalan Kaki';
+        transportText = 'Jalan';
         transportColor = const Color(0xFF4CAF50);
         transportIcon = Icons.directions_walk;
         break;
@@ -657,141 +607,137 @@ class _MapScreenState extends State<MapScreen>
     }
 
     return Positioned(
-      bottom: 120,
+      bottom: MediaQuery.of(context).padding.bottom + 80,
       left: 16,
       right: 16,
       child: ScaleTransition(
         scale: _animation,
         child: Material(
           color: Colors.transparent,
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 15,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: transportColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              transportIcon,
-                              color: transportColor,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.todoTitle != null
-                                    ? 'Rute ke Lokasi Tugas'
-                                    : 'Rute ke Tujuan',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      isDarkMode ? Colors.white : Colors.black,
-                                ),
-                              ),
-                              Text(
-                                transportText,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDarkMode
-                                      ? Colors.grey.shade400
-                                      : Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.red,
-                            size: 16,
-                          ),
-                        ),
-                        onPressed: _clearDestination,
-                      ),
-                    ],
+          child: GestureDetector(
+            onVerticalDragUpdate: (details) {
+              // Bisa ditambahkan gesture untuk dismiss
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.grey.shade900.withOpacity(0.95)
+                    : Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 15,
+                    offset: const Offset(0, 6),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Jarak Tempuh',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isDarkMode
-                                  ? Colors.grey.shade400
-                                  : Colors.grey.shade600,
-                            ),
-                          ),
-                          Text(
-                            '${_distance.toStringAsFixed(2)} km',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: isDarkMode
-                                  ? Colors.white
-                                  : const Color(0xFF3B417A),
-                            ),
-                          ),
-                        ],
+                ],
+                border: Border.all(
+                  color: transportColor.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Header dengan tombol close
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: transportColor.withOpacity(0.05),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: _calculateRoute,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF9F7AEA),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: transportColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                          child: Icon(
+                            transportIcon,
+                            color: transportColor,
+                            size: 18,
                           ),
                         ),
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text(
-                          'Hitung Ulang',
-                          style: TextStyle(fontSize: 14),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Rute ke ${widget.todoTitle != null ? 'Lokasi Tugas' : 'Tujuan'}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        IconButton(
+                          icon: Icon(Icons.close, size: 18),
+                          color: Colors.grey,
+                          onPressed: _clearDestination,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Konten
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Jarak',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_distance.toStringAsFixed(1)} km',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: transportColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Estimasi Waktu',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _estimatedTime,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: transportColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -802,118 +748,199 @@ class _MapScreenState extends State<MapScreen>
     );
   }
 
-  Widget _buildLocationCard() {
+  // Floating transport selector
+  Widget _buildFloatingTransportSelector() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final topPosition = widget.todoTitle != null ? 230.0 : 110.0;
 
     return Positioned(
-      top: topPosition,
-      left: 16,
-      right: 90,
+      bottom: MediaQuery.of(context).padding.bottom + 20,
+      right: 16,
       child: Material(
         color: Colors.transparent,
         child: Container(
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            color: isDarkMode
+                ? Colors.grey.shade900.withOpacity(0.8)
+                : Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.grey.shade700.withOpacity(0.3)
+                  : Colors.grey.shade300.withOpacity(0.5),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildTransportButton(
+                icon: Icons.directions_walk,
+                isSelected: _selectedTransport == 'walking',
+                color: const Color(0xFF4CAF50),
+                onTap: () {
+                  setState(() => _selectedTransport = 'walking');
+                  if (_destinationLocation != null) _calculateRoute();
+                },
+              ),
+              Container(
+                height: 30,
+                width: 1,
+                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+              ),
+              _buildTransportButton(
+                icon: Icons.directions_bike,
+                isSelected: _selectedTransport == 'cycling',
+                color: const Color(0xFF2196F3),
+                onTap: () {
+                  setState(() => _selectedTransport = 'cycling');
+                  if (_destinationLocation != null) _calculateRoute();
+                },
+              ),
+              Container(
+                height: 30,
+                width: 1,
+                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+              ),
+              _buildTransportButton(
+                icon: Icons.directions_car,
+                isSelected: _selectedTransport == 'driving',
+                color: const Color(0xFFF44336),
+                onTap: () {
+                  setState(() => _selectedTransport = 'driving');
+                  if (_destinationLocation != null) _calculateRoute();
+                },
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransportButton({
+    required IconData icon,
+    required bool isSelected,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isSelected ? color : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: isSelected ? Colors.white : color,
+            size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Floating location info
+  Widget _buildFloatingLocationInfo() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final hasWeather = context.watch<WeatherProvider>().weather != null;
+
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 80,
+      left: 16,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? Colors.grey.shade900.withOpacity(0.8)
+                : Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.grey.shade700.withOpacity(0.3)
+                  : Colors.grey.shade300.withOpacity(0.5),
+              width: 1,
+            ),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            padding: const EdgeInsets.all(10),
+            child: Consumer<WeatherProvider>(
+              builder: (context, weatherProvider, child) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2196F3).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.location_on,
-                        color: Color(0xFF2196F3),
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
+                    // Alamat singkat
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: 200),
                       child: Text(
                         _address,
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
                           color: isDarkMode ? Colors.white : Colors.black,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Consumer<WeatherProvider>(
-                  builder: (context, weatherProvider, child) {
-                    if (weatherProvider.weather == null) {
-                      return const SizedBox();
-                    }
-                    return Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF9800).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
+                    // Cuaca
+                    if (hasWeather) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
                             Icons.thermostat,
-                            color: Color(0xFFFF9800),
-                            size: 14,
+                            size: 12,
+                            color: const Color(0xFFFF9800),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${weatherProvider.weather!.temperature}°C',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: isDarkMode ? Colors.white : Colors.black,
+                          const SizedBox(width: 4),
+                          Text(
+                            '${weatherProvider.weather!.temperature}°C',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
+                          const SizedBox(width: 12),
+                          Icon(
                             Icons.air,
-                            color: Color(0xFF4CAF50),
-                            size: 14,
+                            size: 12,
+                            color: const Color(0xFF4CAF50),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${weatherProvider.weather!.windSpeed} km/h',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: isDarkMode ? Colors.white : Colors.black,
+                          const SizedBox(width: 4),
+                          Text(
+                            '${weatherProvider.weather!.windSpeed} km/h',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
+                        ],
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -921,27 +948,37 @@ class _MapScreenState extends State<MapScreen>
     );
   }
 
-  Widget _buildMapControls() {
+  // Floating map controls
+  Widget _buildFloatingMapControls() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Positioned(
-      bottom: 100,
+      bottom: MediaQuery.of(context).padding.bottom + 80,
       right: 16,
       child: Material(
         color: Colors.transparent,
         child: Container(
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            color: isDarkMode
+                ? Colors.grey.shade900.withOpacity(0.8)
+                : Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
             ],
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.grey.shade700.withOpacity(0.3)
+                  : Colors.grey.shade300.withOpacity(0.5),
+              width: 1,
+            ),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               _buildControlButton(
                 icon: Icons.my_location,
@@ -949,7 +986,11 @@ class _MapScreenState extends State<MapScreen>
                 onPressed: _getCurrentLocation,
                 tooltip: 'Lokasi Saya',
               ),
-              const SizedBox(height: 8),
+              Container(
+                width: 36,
+                height: 1,
+                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+              ),
               _buildControlButton(
                 icon: Icons.add,
                 color: const Color(0xFF4CAF50),
@@ -959,7 +1000,11 @@ class _MapScreenState extends State<MapScreen>
                 },
                 tooltip: 'Zoom In',
               ),
-              const SizedBox(height: 8),
+              Container(
+                width: 36,
+                height: 1,
+                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+              ),
               _buildControlButton(
                 icon: Icons.remove,
                 color: const Color(0xFFF44336),
@@ -982,107 +1027,108 @@ class _MapScreenState extends State<MapScreen>
     required VoidCallback onPressed,
     required String tooltip,
   }) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade800 : color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 20,
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: 36,
+            height: 36,
+            padding: const EdgeInsets.all(6),
+            child: Icon(
+              icon,
+              color: color,
+              size: 18,
+            ),
           ),
         ),
       ),
     );
   }
 
-  // TAMBAHAN: Fungsi untuk menentukan judul AppBar
-  String _getAppBarTitle() {
-    if (widget.todoTitle != null) {
-      return 'Lokasi: ${widget.todoTitle}';
-    }
-    return 'Peta & Navigasi';
+  // Floating Action Button untuk konfirmasi lokasi
+  Widget _buildConfirmButton() {
+    if (widget.isFromTodo == true) return const SizedBox();
+
+    return Positioned(
+      bottom: MediaQuery.of(context).padding.bottom + 20,
+      left: 16,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF9F7AEA),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF9F7AEA).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: InkWell(
+            onTap: () {
+              if (_destinationLocation == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Pilih lokasi terlebih dahulu'),
+                    backgroundColor: Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              Navigator.pop(context, {
+                'address': _destinationController.text,
+                'lat': _destinationLocation!.latitude,
+                'lng': _destinationLocation!.longitude,
+                'estimatedTime': _estimatedTime,
+                'distance': _distance,
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Pilih',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.map, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              _getAppBarTitle(),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Colors.white,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF9F7AEA),
-                Color(0xFF667EEA),
-              ],
-            ),
-          ),
-        ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(20),
-            bottomRight: Radius.circular(20),
-          ),
-        ),
-        actions: [
-          if (widget.isFromTodo == true)
-            IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child:
-                    const Icon(Icons.arrow_back, size: 20, color: Colors.white),
-              ),
-              onPressed: () => Navigator.pop(context),
-              tooltip: 'Kembali',
-            ),
-          const SizedBox(width: 8),
-        ],
-      ),
       body: Stack(
         children: [
+          // Peta (fullscreen)
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -1090,7 +1136,7 @@ class _MapScreenState extends State<MapScreen>
                       widget.initialLongitude != null
                   ? LatLng(widget.initialLatitude!, widget.initialLongitude!)
                   : LatLng(-6.200000, 106.816666),
-              zoom: widget.zoom ?? 12.0,
+              zoom: widget.zoom ?? 15.0,
               interactiveFlags: InteractiveFlag.all,
               onTap: (tapPosition, latLng) => _onMapTap(latLng),
             ),
@@ -1104,7 +1150,7 @@ class _MapScreenState extends State<MapScreen>
                   polylines: [
                     Polyline(
                       points: _polylinePoints,
-                      color: const Color(0xFF9F7AEA).withOpacity(0.8),
+                      color: const Color(0xFF9F7AEA).withOpacity(0.7),
                       strokeWidth: 4.0,
                       gradientColors: [
                         const Color(0xFF9F7AEA),
@@ -1118,28 +1164,22 @@ class _MapScreenState extends State<MapScreen>
                   markers: [
                     Marker(
                       point: _currentLocation!,
-                      width: 60.0,
-                      height: 60.0,
-                      builder: (ctx) => ScaleTransition(
-                        scale: Tween(begin: 0.0, end: 1.0).animate(
-                          CurvedAnimation(
-                            parent: _animationController,
-                            curve: Curves.elasticOut,
+                      width: 40.0,
+                      height: 40.0,
+                      builder: (ctx) => Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.red,
+                            width: 2,
                           ),
                         ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.red,
-                              width: 2,
-                            ),
-                          ),
-                          child: const Icon(
+                        child: const Center(
+                          child: Icon(
                             Icons.location_on,
                             color: Colors.red,
-                            size: 30,
+                            size: 20,
                           ),
                         ),
                       ),
@@ -1151,34 +1191,28 @@ class _MapScreenState extends State<MapScreen>
                   markers: [
                     Marker(
                       point: _destinationLocation!,
-                      width: 60.0,
-                      height: 60.0,
-                      builder: (ctx) => ScaleTransition(
-                        scale: Tween(begin: 0.0, end: 1.0).animate(
-                          CurvedAnimation(
-                            parent: _animationController,
-                            curve: Curves.elasticOut,
+                      width: 40.0,
+                      height: 40.0,
+                      builder: (ctx) => Container(
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.green,
+                            width: 2,
                           ),
                         ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.green,
-                              width: 2,
-                            ),
-                          ),
+                        child: Center(
                           child: widget.todoTitle != null
                               ? const Icon(
                                   Icons.task_alt,
                                   color: Colors.green,
-                                  size: 30,
+                                  size: 20,
                                 )
                               : const Icon(
                                   Icons.flag,
                                   color: Colors.green,
-                                  size: 30,
+                                  size: 20,
                                 ),
                         ),
                       ),
@@ -1187,14 +1221,29 @@ class _MapScreenState extends State<MapScreen>
                 ),
             ],
           ),
+
+          // UI Overlays
+          _buildCompactSearchBar(), // Search bar minimalis di atas
+          _buildFloatingLocationInfo(), // Info lokasi floating kiri atas
+
+          // Kontrol dan info panel (tampil bergantian)
+          if (!_showRoute)
+            _buildFloatingMapControls() // Map controls (tampil saat tidak ada rute)
+          else
+            _buildFloatingInfoPanel(), // Info panel rute (tampil saat ada rute)
+
+          _buildFloatingTransportSelector(), // Transport selector bawah kanan
+          _buildConfirmButton(), // Tombol konfirmasi bawah kiri
+
+          // Loading overlay
           if (_isLoading)
             Center(
               child: Container(
-                width: 80,
-                height: 80,
+                width: 100,
+                height: 100,
                 decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -1202,59 +1251,27 @@ class _MapScreenState extends State<MapScreen>
                     ),
                   ],
                 ),
-                child: Column(
+                child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircularProgressIndicator(
+                    CircularProgressIndicator(
                       color: Color(0xFF9F7AEA),
+                      strokeWidth: 3,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 12),
                     Text(
-                      widget.todoTitle != null
-                          ? 'Memuat lokasi tugas...'
-                          : 'Mengambil lokasi...',
+                      'Loading...',
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDarkMode ? Colors.white : Colors.black,
+                        color: Colors.grey,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          _buildTodoHeader(), // TAMBAHAN
-          _buildSearchBar(),
-          _buildLocationCard(),
-          _buildTransportSelector(),
-          _buildRouteInfoCard(),
-          _buildMapControls(),
         ],
       ),
-      floatingActionButton: widget.isFromTodo == true
-          ? null // Sembunyikan FAB jika dari todo
-          : FloatingActionButton(
-              onPressed: () {
-                if (_destinationLocation == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Silakan pilih lokasi terlebih dahulu'),
-                    ),
-                  );
-                  return;
-                }
-
-                Navigator.pop(context, {
-                  'address': _destinationController.text,
-                  'lat': _destinationLocation!.latitude,
-                  'lng': _destinationLocation!.longitude,
-                });
-              },
-              backgroundColor: const Color(0xFF9F7AEA),
-              foregroundColor: Colors.white,
-              elevation: 4,
-              child: const Icon(Icons.check),
-            ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
 }
