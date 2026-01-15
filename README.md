@@ -1,167 +1,121 @@
-# 🧠 Priority Hub
+# Priority Hub - To-Do List Application
 
-**Tema Aplikasi:** To-Do List  
-**Nama Aplikasi:** Priority Hub  
+Aplikasi ini dikembangkan untuk memenuhi tugas pemrograman mobile dengan fitur-fitur wajib yang telah diimplementasikan secara lengkap. Berikut adalah dokumentasi teknis mengenai bagaimana setiap fitur wajib diterapkan dalam kode.
 
 ---
 
 👥 Anggota Tim
 | Nama Lengkap | NIM | Tugas |
 |---------------|-----|--------|
-| Agus | 2310120018 | Ketua Tim - Logika aplikasi & manajemen data To-Do & Perancangan Project |
-| Rifo | 2310120025 | Desain UI dan implementasi Login SCr |
-| Byan | 2310120024 | Intergrasi CRUD dengan SQLite dan SharedPreferences |
+| Agus Saputra Hamzah | 2310120018 | Ketua Tim - Logika aplikasi & manajemen data To-Do & Perancangan Project |
+| Muhammad Abyan Alwafi Effendy | 2310120024 | Integrasi API, Local Base Service & Reactive Progamming |
+| Muhammad Dzikri Khairrifo | 2310120024 | Local Base Storage & UI Navigation |
 
 ---
 
-📱 Deskripsi Aplikasi
-**Priority Hub** adalah aplikasi *to-do list* yang dirancang untuk membantu pengguna mengatur aktivitas harian berdasarkan tingkat prioritas.  
-Aplikasi ini memiliki antarmuka sederhana namun fungsional untuk meningkatkan produktivitas pengguna.
+## 📋 Fitur Wajib & Implementasi
 
----
+### 1. UI & Navigation (Material Design & Responsive)
+*   **Material Design**: Aplikasi menggunakan widget bawaan Flutter Material Design seperti `Scaffold`, `AppBar`, `Card`, `FloatingActionButton`, dan `ElevatedButton`.
+*   **Responsive Layout**:
+    *   Menggunakan `MediaQuery` untuk mendapatkan ukuran layar (lihat `login_screen.dart`).
+    *   Menggunakan `LayoutBuilder` atau `Flexible`/`Expanded` (dalam `Column` dan `Row` di `home_screen.dart`) untuk memastikan tampilan menyesuaikan berbagai ukuran layar tanpa *hardcode* pixel.
+*   **Navigation**: Menggunakan `Navigator.pushReplacement` untuk perpindahan antar halaman (Splash -> Login -> Home) dengan animasi transisi standar Android/iOS.
 
-## 🌟 Fitur Utama
-✏️ **Menambahkan To-Do List**  
-  Pengguna dapat menambah daftar tugas dengan mudah.  
-🗂️ **Kategorisasi Aktivitas**  
-  Setiap tugas dapat dikelompokkan berdasarkan kategori (misalnya: olahraga, pribadi, pekerjaan, lainnya).  
-📅 **Pemilihan Tanggal**  
-  Pengguna bisa menetapkan tanggal pelaksanaan untuk setiap tugas.  
-🚨 **Tombol Prioritas**  
-  Aktifkan toggle khusus jika tugas tersebut bersifat penting atau mendesak.  
-✅ **Apresiasi Penyelesaian**  
-  Saat semua tugas berhasil diselesaikan, aplikasi menampilkan pesan apresiasi untuk pengguna.  
-🗑️ **Pilih & Hapus To-Do List**  
-  Pengguna dapat memilih dan menghapus tugas yang sudah tidak diperlukan.
-
----
-Fitur Tambahan
-### 1. Login 🔐
+#### Login 🔐
 Priority Hub menerapkan **Authentication System** untuk fitur **Masuk** dan **Daftar**, sehingga pengguna dapat:
-
 - Membuat akun baru dengan aman  
 - Masuk ke akun mereka secara terproteksi  
 - Menyimpan data tugas secara terpersonal menggunakan **penyimpanan lokal / database**  
 
 Fitur ini memastikan setiap data tugas terkait langsung dengan akun pengguna, menjaga keamanan dan privasi.
 
----
-
-### 2. Light/Dark Mode 🌞🌙
-Pengguna dapat **beralih antara Light dan Dark Mode**, memberikan fleksibilitas visual sesuai preferensi dan kondisi cahaya:
-
-- **Light Mode**: Cocok untuk penggunaan di lingkungan terang  
-- **Dark Mode**: Nyaman untuk kondisi gelap atau malam hari  
-
-Fitur ini meningkatkan pengalaman visual dan menambahkan personalisasi aplikasi.
-
----
-
-### 3. Penyimpanan Data Lokal (SQLite & SharedPreferences) 💾
-Priority Hub menggunakan kombinasi **SQLite** dan **SharedPreferences** untuk manajemen data:
-
-- **SQLite**  
-  Digunakan untuk menyimpan daftar tugas secara terstruktur, memungkinkan:  
-  - CRUD (Create, Read, Update, Delete) data tugas  
-  - Data tersimpan permanen meski aplikasi ditutup  
-
-- **SharedPreferences**  
-  Digunakan untuk menyimpan **pengaturan pengguna** seperti:  
-  - Mode tampilan (Light/Dark)  
-  - Data terakhir yang digunakan atau preferensi sederhana lainnya  
-
-
-💡 Tujuan
-Meningkatkan efektivitas pengelolaan waktu dan membantu pengguna agar lebih konsisten menyelesaikan kegiatan berdasarkan prioritasnya.
-
----
-
-🛠️ Teknologi yang Digunakan
-- Flutter (Dart)
-- Visual Studio Code
-- Git & GitHub
-
----
-
-📸 Cuplikan Tampilan 
-Berikut beberapa tampilan dari aplikasi **Priority Hub** 👇  
-
-### 1. Tampilan Awal Halaman Login 🔑
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/TampilanLogin.png?raw=true)
-
-Menunjukkan tampilan awal untuk masuk ke aplikasi, dengan kolom kosong untuk **Username** dan **Password**, serta tombol **MASUK** dan **DAFTAR AKUN BARU**. Pengguna dapat langsung mendaftar atau masuk sesuai akun yang dimiliki.
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/db2b15c7-4f5b-421e-835a-7b623b115ee9" />
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/4640f4a4-7f7f-41a3-b847-6daca0f6e15d" />
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/587a71b4-8693-437f-b86a-061da3924020" />
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/ef173fa8-0aef-4ebc-a05b-f278bf47e507" />
 
 
 ---
 
-### 2. Halaman Login Setelah Registrasi Berhasil ✅
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/HalamanLogin.png?raw=true)
+### 2. State Management State Management & Persistence (Provider + SharedPreferences)
+Aplikasi menerapkan **Provider** sebagai *global state management*.
+*   **Implementasi State Management**:
+    *   **MultiProvider**: Terletak di root (main.dart) untuk menyediakan WeatherProvider (data cuaca) dan ThemeProvider (pengaturan tema) ke seluruh aplikasi.
+    *   **Reactive UI**: Widget menggunakan Consumer untuk merespons perubahan data secara otomatis setelah notifyListeners() dipanggil.
+    *   **Usage**: UI (`home_screen.dart`) menggunakan `Consumer<WeatherProvider>` atau `Provider.of` untuk mendengarkan perubahan data cuaca (`notifyListeners()`) dan membangun ulang widget secara otomatis.
 
-Menampilkan halaman login setelah pengguna berhasil mendaftar. Terdapat notifikasi hijau di bawah yang menandakan registrasi berhasil, dan kolom **Username** serta **Password** sudah terisi secara otomatis, memudahkan pengguna untuk langsung masuk.
-
----
-
-### 3. Halaman Login dengan Pesan Kesalahan ❌
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/pesanusernamesalahh.png?raw=true)
-
-Menunjukkan halaman login ketika pengguna memasukkan **Username** atau **Password** yang salah. Terdapat notifikasi merah di bawah kolom login yang memberi tahu bahwa kredensial yang dimasukkan tidak valid.
-
----
-
-### 4. Halaman HomePage ❌
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/HomePage.png?raw=true)
-
-Menunjukkan halaman utama dari tampilan aplikasi PriorityHub
+*   **Implementasi Persistence (Tema)**:
+    *   **Dependency**: Menggunakan paket shared_preferences.
+    *   **Logic**: Saat pengguna mengubah tema (Light/Dark), aplikasi akan menyimpan nilai boolean ke penyimpanan lokal.
+    *   **Initialization**: Saat aplikasi pertama kali dibuka, ThemeProvider akan membaca nilai dari SharedPreferences untuk menentukan tema yang aktif sebelum UI dirender.
+   
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/81a89719-3ac3-496f-adc4-36d81945d411" />
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/614cb9e5-fddd-4b68-b4c7-da0140aaf8df" />
 
 ---
 
-### 5. Tampilan Utama Mode Terang (Light)☀️
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/TampilanLight.png?raw=true)
+### 3. Reactive Programming
+UI bereaksi otomatis terhadap perubahan data tanpa perlu intervensi manual yang rumit.
+*   **Implementasi**:
+    *   Pada **Cuaca**: Saat `WeatherProvider` memanggil `notifyListeners()`, widget `Consumer` di `home_screen.dart` otomatis memperbarui tampilan suhu dan ikon cuaca.
+    *   Pada **Todo List**: Menggunakan `setState` dan *callback* setelah operasi database (CRUD SQLite) untuk me-refresh tampilan daftar tugas secara real-time.
 
-Menampilkan **homepage** aplikasi **Priority Hub** dalam **Light Mode**. Pada tampilan ini, terdapat informasi **0/0 Tugas Selesai** dan daftar tugas masih kosong, sehingga pengguna dapat langsung menambahkan tugas baru.
-
----
-
-###  6. Tampilan Utama Mode Gelap (Dark)🌙 
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/DarkMode.png?raw=true)
-
-Menampilkan **homepage** aplikasi dalam **Dark Mode**. Sama seperti Light Mode, ditampilkan **0/0 Tugas Selesai** dan tidak ada tugas yang tercatat, namun dengan tampilan gelap yang nyaman untuk kondisi cahaya rendah.
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/de8a5b8c-6ad1-4e5b-a91e-6c2f52e537ca" />
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/d26ac772-94f7-4b11-b178-e9b298281d1b" />
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/fc2c44b8-dc2c-45cd-b1b0-c8ddbd24b08b" />
 
 ---
 
-###  7. Penambahan Item/Task To Do ➕
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/Task.png?raw=true)
-
-Menunjukkan proses penambahan tugas baru di aplikasi **Priority Hub**. Pengguna dapat mengisi **nama tugas**, menentukan **tanggal jatuh tempo**, serta menandai **tingkat prioritas**. Setelah disimpan, tugas baru langsung muncul di daftar tugas utama, siap untuk dikelola dan diselesaikan.
----
-
-###  8. Tampilan Utama Setelah Semua Tugas Selesai 🎉
-![image alt](https://github.com/Agush01-ui/pemrogramanmobille/blob/main/MengerjakanTask.png?raw=true)
-
-Menampilkan halaman utama setelah semua tugas selesai dicentang. Tampilan menunjukkan **2/2 Tugas Selesai** dan muncul pesan ucapan selamat berwarna merah muda, memberikan pengalaman positif kepada pengguna ketika berhasil menyelesaikan semua tugas.
+### 4. Integrasi API Eksternal (Open-Meteo Weather API)
+Menggunakan API publik gratis dari Open-Meteo untuk menampilkan data cuaca.
+*   **API URL**: `https://api.open-meteo.com/v1/forecast`
+*   **Implementasi**:
+    *   **Service**: `lib/data/services/weather_service.dart`. Menggunakan paket `http` untuk mengirim request GET dengan parameter Latitude dan Longitude dinamis.
+    *   **JSON Parsing**: Data JSON dikonversi menjadi objek Dart melalui `WeatherModel.fromJson` di `lib/data/models/weather_model.dart`.
 
 ---
-## Penyimpanan Data 💾
 
-Priority Hub menyimpan data pengguna melalui dua mekanisme utama:
+### 5. Local Storage / Database
+Aplikasi menerapkan **DUA** jenis penyimpanan lokal untuk keandalan maksimal:
+1.  **SharedPreferences** (Wajib):
+    *   Digunakan untuk menyimpan **Preferensi Tema** (Dark/Light mode) dan **Status Login**.
+    *   Digunakan juga untuk menyimpan *cache* lokasi terakhir (`last_lat`, `last_long`).
+    *   Lokasi Kode: `lib/main.dart` (Tema) dan `lib/providers/weather_provider.dart` (Cache Lokasi).
+2.  **SQLite (sqflite)**:
+    *   Digunakan untuk menyimpan data user (registrasi/login) dan daftar tugas (To-Do List).
+    *   Lokasi Kode: `lib/database_helper.dart`.
 
-### 1. SQLite
-- Menyimpan daftar tugas secara **terstruktur** di database lokal.  
-- Mendukung operasi **CRUD**:  
-  - **Create**: Tambah tugas baru  
-  - **Read**: Tampilkan daftar tugas  
-  - **Update**: Ubah tugas (status, prioritas, tanggal)  
-  - **Delete**: Hapus tugas  
-- Data tersimpan **permanen di perangkat**, tetap ada meski aplikasi ditutup.
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/b8c5c301-bb18-4191-b01c-d326ec8be2e9" />
 
-### 2. SharedPreferences
-- Menyimpan **pengaturan pengguna** seperti mode Light/Dark atau data terakhir yang digunakan.  
-- Data disimpan dalam bentuk **key-value**, mudah diakses saat aplikasi dibuka kembali.  
-- Memastikan aplikasi selalu menampilkan preferensi pengguna secara otomatis.
+---
 
-**Alur singkat:**  
-1. Tambah/ubah tugas → disimpan di **SQLite**  
-2. Ubah pengaturan → disimpan di **SharedPreferences**  
-3. Buka aplikasi → SQLite + SharedPreferences → data & pengaturan siap digunakan
+### 6. Location Based Service (GPS)
+Aplikasi menggabungkan sensor GPS untuk posisi real-time dan OpenStreetMap untuk visualisasi rute dan lokasi.
+*   **Implementasi**:
+    *   **Dependency**: Menambahkan flutter_map (untuk menampilkan tile OSM) dan latlong2 (untuk manajemen koordinat).
+    *   **Permission**: Menggunakan `permission_handler` untuk meminta izin lokasi pada Android (`AndroidManifest.xml` telah dikonfigurasi).
+    *   **Service**: `lib/data/services/location_service.dart`. Fungsi `getCurrentLocation()` menangani pengecekan izin dan pengambilan koordinat. Fungsi getRoute() memanggil API OSRM (Open Source Routing Machine) untuk mendapatkan garis rute berdasarkan data OSM.
+    *   **Fitur**: Fungsi `Weather Access` sebagai Koordinat yang digunakan untuk API cuaca. Fungsi `Visual Mapping` untuk Menampilkan marker posisi pengguna di atas peta OpenStreetMap. Fungsi `Routing` untuk menghitung dan menampilkan jalur dari lokasi pengguna ke titik tujuan (misalnya lokasi stasiun cuaca atau titik tertentu).
+
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/a8d9da02-8842-4c83-a41f-13711380f83e" />
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/48cb89b9-8cfb-4222-803e-e84cdbec30b7" />
+<img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/199a75fd-07ac-4a7f-9e79-a079553327be" />
+
+---
+
+### 7. Dependency Injection & Clean Architecture
+Struktur kode aplikasi dipisahkan dengan jelas untuk memudahkan *maintenance* (pemeliharaan).
+
+*   **UI Layer (Tampilan)**:
+    *   Folder: `lib/ui/screens/` & `lib/ui/widgets/`
+    *   Berisi: `HomeScreen`, `LoginScreen`, `SplashScreen`. Hanya fokus pada tampilan.
+*   **Service/Repository Layer (Data Source)**:
+    *   Folder: `lib/data/services/`
+    *   Berisi: `WeatherService` (ambil data API), `LocationService` (ambil data GPS). UI tidak tahu menahu soal HTTP atau GPS, hanya memanggil service ini.
+*   **State Management Layer (Penghubung)**:
+    *   Folder: `lib/providers/`
+    *   Berisi: `WeatherProvider`. Bertugas memanggil Service, menyimpan data di memori, dan memberi tahu UI jika ada update.
+<img width="244" height="505" alt="image" src="https://github.com/user-attachments/assets/a7a39a98-2ad1-4ffd-8c4d-d1b2700e1710" />
 
 © 2025 – Tim Priority Hub.
