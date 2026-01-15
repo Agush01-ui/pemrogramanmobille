@@ -104,7 +104,7 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             cardColor: const Color(0xFF1E1E1E),
-            dialogTheme: const DialogTheme(
+            dialogTheme: const DialogThemeData(
               backgroundColor: Color(0xFF2C2C2C),
             ),
           ),
