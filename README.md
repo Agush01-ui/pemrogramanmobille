@@ -117,3 +117,5 @@ Struktur kode aplikasi dipisahkan dengan jelas untuk memudahkan *maintenance* (p
     *   Folder: `lib/providers/`
     *   Berisi: `WeatherProvider`. Bertugas memanggil Service, menyimpan data di memori, dan memberi tahu UI jika ada update.
 <img width="244" height="505" alt="image" src="https://github.com/user-attachments/assets/a7a39a98-2ad1-4ffd-8c4d-d1b2700e1710" />
+
+© 2025 – Tim Priority Hub.
