@@ -64,6 +64,7 @@ UI bereaksi otomatis terhadap perubahan data tanpa perlu intervensi manual yang 
 <img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/de8a5b8c-6ad1-4e5b-a91e-6c2f52e537ca" />
 <img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/d26ac772-94f7-4b11-b178-e9b298281d1b" />
 <img width="220" height="450" alt="image" src="https://github.com/user-attachments/assets/fc2c44b8-dc2c-45cd-b1b0-c8ddbd24b08b" />
+<img width="220" height="450" alt="image" src="https://github.com/Agush01-ui/pemrogramanmobille/blob/main/Hapus%20Taskk.jpeg?raw=true"/>
 
 ---
 
