@@ -7,7 +7,7 @@ Aplikasi ini dikembangkan untuk memenuhi tugas pemrograman mobile dengan fitur-f
 👥 Anggota Tim
 | Nama Lengkap | NIM | Tugas |
 |---------------|-----|--------|
-| Agus Saputra Hamzah | 2310120018 | Ketua Tim - Logika aplikasi & manajemen data To-Do & Perancangan Project |
+| Agus Saputra Hamzah | 2310120018 | Ketua Tim - Logika aplikasi & manajemen data To-Do & Perancangan Project | Integrasi API
 | Muhammad Abyan Alwafi Effendy | 2310120024 | Integrasi API, Local Base Service & Reactive Progamming |
 | Muhammad Dzikri Khairrifo | 2310120024 | Local Base Storage & UI Navigation |
 
